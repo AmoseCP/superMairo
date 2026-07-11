@@ -51,7 +51,7 @@ export class HUDScene extends Phaser.Scene {
     this.statusText.setText(
       `${gs.level.name}（${gs.levelId}）  ⏱ ${elapsedSec}s  ${muteIcon}\n` +
         `共享生命：${hearts}  |  ${p2Status}\n` +
-        `🪙 金币：${gs.scoreManager.coins}   总得分：${gs.totalScore}  |  ${formStatus}`,
+        `🪙 金币：${gs.totalCoins}   总得分：${gs.totalScore}  |  ${formStatus}`,
     )
   }
 }

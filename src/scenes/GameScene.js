@@ -143,15 +143,21 @@ export class GameScene extends Phaser.Scene {
   init(data) {
     this.levelId = data.levelId
     // Carried over from levels already cleared this playthrough (see
-    // _advanceAfterLevelComplete) so score keeps accumulating across levels
-    // instead of resetting to 0 at every scene restart. Resets to 0 when a
-    // brand-new run starts (first level, or retrying after Game Over).
+    // _advanceAfterLevelComplete) so score/coins keep accumulating across
+    // levels instead of resetting to 0 at every scene restart. Reset to 0
+    // when a brand-new run starts (first level, or retrying after Game Over).
     this.priorScore = data.priorScore ?? 0
+    this.priorCoins = data.priorCoins ?? 0
   }
 
   /** Score already banked from cleared levels + the current level's live score. */
   get totalScore() {
     return this.priorScore + this.scoreManager.score
+  }
+
+  /** Coins banked from cleared levels + the current level's — what the HUD shows and the 1UP milestone counts. */
+  get totalCoins() {
+    return this.priorCoins + this.scoreManager.coins
   }
 
   create() {
@@ -774,10 +780,12 @@ export class GameScene extends Phaser.Scene {
 
   /** Credits a coin to `who` (score + 1UP milestone + sfx) — shared by world coins and block payouts. */
   _collectCoin(player, who) {
-    const coinsBefore = this.scoreManager.coins
+    // Milestone counts the cross-level running total, matching what the HUD
+    // shows — with per-level counting, 100 coins was practically unreachable.
+    const coinsBefore = this.totalCoins
     this.scoreManager.addCoin(who)
     this.audioManager?.playCoin()
-    if (Math.floor(coinsBefore / COINS_PER_EXTRA_LIFE) < Math.floor(this.scoreManager.coins / COINS_PER_EXTRA_LIFE)) {
+    if (Math.floor(coinsBefore / COINS_PER_EXTRA_LIFE) < Math.floor(this.totalCoins / COINS_PER_EXTRA_LIFE)) {
       this._award1Up(player)
     }
   }
@@ -967,7 +975,7 @@ export class GameScene extends Phaser.Scene {
     if (!this.coop.p2Joined) {
       return (
         `总得分：${total}（本关 +${sm.score}，含限时奖励 +${timeBonus}、旗杆高度奖励 +${heightBonus}）　` +
-        `金币：${sm.coins}　用时：${seconds.toFixed(1)}s`
+        `金币：${this.totalCoins}（本关 +${sm.coins}）　用时：${seconds.toFixed(1)}s`
       )
     }
     const p1 = sm.perPlayer.p1
@@ -975,7 +983,8 @@ export class GameScene extends Phaser.Scene {
     return (
       `P1 本关得分：${sm.playerScore('p1')}（🪙${p1.coins} ⚔${p1.kills}）　` +
       `P2 本关得分：${sm.playerScore('p2')}（🪙${p2.coins} ⚔${p2.kills}）\n` +
-      `团队总得分：${total}（本关 +${sm.score}，含限时奖励 +${timeBonus}、旗杆高度奖励 +${heightBonus}）　用时：${seconds.toFixed(1)}s`
+      `团队总得分：${total}（本关 +${sm.score}，含限时奖励 +${timeBonus}、旗杆高度奖励 +${heightBonus}）　` +
+      `金币：${this.totalCoins}（本关 +${sm.coins}）　用时：${seconds.toFixed(1)}s`
     )
   }
 
@@ -1023,11 +1032,12 @@ export class GameScene extends Phaser.Scene {
     this._levelCompleteAdvancing = true
     this.scene.stop('HUDScene') // launched separately — restart() won't touch it on its own
     // Looping back to level 1 after clearing everything starts a brand-new
-    // playthrough, so the running total resets there instead of growing forever.
+    // playthrough, so the running totals reset there instead of growing forever.
     const priorScore = this._nextLevelId ? this.totalScore : 0
+    const priorCoins = this._nextLevelId ? this.totalCoins : 0
     this.cameras.main.fadeOut(250, 0, 0, 0)
     this.cameras.main.once('camerafadeoutcomplete', () => {
-      this.scene.restart({ levelId: this._nextLevelId ?? FIRST_LEVEL_ID, priorScore })
+      this.scene.restart({ levelId: this._nextLevelId ?? FIRST_LEVEL_ID, priorScore, priorCoins })
     })
   }
 
@@ -1038,7 +1048,7 @@ export class GameScene extends Phaser.Scene {
       this.scene.start('GameOverScene', {
         levelId: this.levelId,
         score: this.totalScore,
-        coins: this.scoreManager.coins,
+        coins: this.totalCoins,
         // Per-player breakdown, only meaningful (and only shown) in co-op.
         coop: this.coop.p2Joined,
         p1Score: this.scoreManager.playerScore('p1'),

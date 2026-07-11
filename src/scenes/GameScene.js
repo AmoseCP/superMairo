@@ -414,17 +414,20 @@ export class GameScene extends Phaser.Scene {
   }
 
   _loadDualSwitchChests(chestData) {
-    this.dualSwitchChests = chestData.map(
-      ({ plateA, plateB, chestX, chestY, reward }) =>
-        new DualSwitchChest(this, {
-          plateA: { x: plateA.x * TILE_SIZE + TILE_SIZE / 2, y: plateA.y * TILE_SIZE + TILE_SIZE / 2 },
-          plateB: { x: plateB.x * TILE_SIZE + TILE_SIZE / 2, y: plateB.y * TILE_SIZE + TILE_SIZE / 2 },
-          chestX: chestX * TILE_SIZE + TILE_SIZE / 2,
-          chestY: chestY * TILE_SIZE + TILE_SIZE / 2,
-          rewardType: reward,
-          onOpen: (type, x, y) => this._spawnItem(type, x, y),
-        }),
-    )
+    this.dualSwitchChests = chestData.map(({ plateA, plateB, chestX, chestY, reward }) => {
+      const chest = new DualSwitchChest(this, {
+        plateA: { x: plateA.x * TILE_SIZE + TILE_SIZE / 2, y: plateA.y * TILE_SIZE + TILE_SIZE / 2 },
+        plateB: { x: plateB.x * TILE_SIZE + TILE_SIZE / 2, y: plateB.y * TILE_SIZE + TILE_SIZE / 2 },
+        chestX: chestX * TILE_SIZE + TILE_SIZE / 2,
+        chestY: chestY * TILE_SIZE + TILE_SIZE / 2,
+        rewardType: reward,
+        onOpen: (type, x, y) => this._spawnItem(type, x, y),
+      })
+      // The chest is a solid box players can stand on/bump into — add its
+      // hitbox to the same ground collision group as everything else solid.
+      this.groundGroup.add(chest.chestRect)
+      return chest
+    })
   }
 
   _loadTimedDoors(doorData) {

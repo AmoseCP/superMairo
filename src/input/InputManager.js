@@ -80,7 +80,9 @@ export class InputManager {
       down = down || pad.down
       jump = jump || pad.A || pad.B
       run = run || pad.Y || pad.R1
-      action = action || pad.X
+      // Fire breath: X face button or either analog trigger — triggers read
+      // as 0..1 values in Phaser, so compare against the shared deadzone.
+      action = action || pad.X || pad.L2 > GAMEPAD_DEADZONE || pad.R2 > GAMEPAD_DEADZONE
     }
 
     if (this.touchState) {

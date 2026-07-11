@@ -19,7 +19,7 @@ export class HUDScene extends Phaser.Scene {
       .text(
         12,
         12,
-        'P1: 方向键/WASD 移动 · Shift 加速 · Space/↑/W 跳跃 · F 喷火（需先吃蘑菇变大+吃火焰花才能用）· 手柄0\n' +
+        'P1: 方向键/WASD 移动 · Shift 加速 · Space/↑/W 跳跃 · F 或手柄 X/扳机键 喷火（需先吃蘑菇变大+吃火焰花才能用）· 手柄0\n' +
           'P2 加入: IJKL + U + O，或手柄1 · 掉进缺口会变泡泡，队友碰泡泡复活',
         { fontFamily: 'sans-serif', fontSize: '14px', color: '#2d2d2d' },
       )

@@ -88,6 +88,12 @@ const CHECKPOINT_FLAG_RADIUS = 6 * WORLD_SCALE
 
 // --- Fireball spawn offset (see _spawnFireball) ---
 const FIREBALL_SPAWN_OFFSET_PX = 12 * WORLD_SCALE
+// Fireball center height above the shooter's FEET. It must sit inside the
+// small patrol enemies' body band (Mochi is only 22px/66px-scaled tall) —
+// spawning at the fire-form player's center (84px above ground) sent shots
+// clean over every small enemy's head, made worse by the projectile's
+// shrink-over-lifetime. 11px (pre-scale) centers it on a Mochi.
+const FIREBALL_SPAWN_ABOVE_FEET_PX = 11 * WORLD_SCALE
 
 // --- Stomp detection / bounce (see _handlePlayerEnemyCollision) ---
 const STOMP_TOLERANCE_PX = 10 * WORLD_SCALE
@@ -148,6 +154,9 @@ export class GameScene extends Phaser.Scene {
     // when a brand-new run starts (first level, or retrying after Game Over).
     this.priorScore = data.priorScore ?? 0
     this.priorCoins = data.priorCoins ?? 0
+    // Power-up forms survive level transitions too — only losing a life
+    // (CoopManager._loseLifeAndRespawn -> resetForm) reverts to small.
+    this.priorForms = data.priorForms ?? null
   }
 
   /** Score already banked from cleared levels + the current level's live score. */
@@ -222,6 +231,8 @@ export class GameScene extends Phaser.Scene {
       checkpointManager: this.checkpointManager,
       touchState: this.touchControls?.state,
       onP2Spawned: (p2) => {
+        // First join this level — restore the form carried from the last one.
+        if (this.priorForms?.p2) p2.applyForm(this.priorForms.p2)
         this._wirePlayerCollisions(p2)
         // Lets one player stand on the other's head (LEVELS.md 1-2 co-op
         // bonus) without letting them shove each other around side-by-side —
@@ -239,6 +250,7 @@ export class GameScene extends Phaser.Scene {
       onGameOver: () => this._onGameOver(),
     })
     this._wirePlayerCollisions(this.coop.p1)
+    if (this.priorForms?.p1) this.coop.p1.applyForm(this.priorForms.p1)
 
     this.cameras.main.setBounds(0, worldHeight - CAMERA_VERTICAL_PADDING, worldWidth, CAMERA_VERTICAL_PADDING)
     this.cameras.main.fadeIn(250, 0, 0, 0)
@@ -683,7 +695,8 @@ export class GameScene extends Phaser.Scene {
 
   _spawnFireball(player) {
     const offsetX = player.facing * (player.rect.width / 2 + FIREBALL_SPAWN_OFFSET_PX)
-    const fireball = new Fireball(this, player.rect.x + offsetX, player.rect.y, player.facing)
+    const spawnY = player.rect.y + player.rect.height / 2 - FIREBALL_SPAWN_ABOVE_FEET_PX
+    const fireball = new Fireball(this, player.rect.x + offsetX, spawnY, player.facing)
     fireball.owner = player
     this.fireballs.push(fireball)
     this.fireballGroup.add(fireball.rect)
@@ -1035,9 +1048,12 @@ export class GameScene extends Phaser.Scene {
     // playthrough, so the running totals reset there instead of growing forever.
     const priorScore = this._nextLevelId ? this.totalScore : 0
     const priorCoins = this._nextLevelId ? this.totalCoins : 0
+    const priorForms = this._nextLevelId
+      ? { p1: this.coop.p1.form, p2: this.coop.p2?.form ?? 'small' }
+      : null
     this.cameras.main.fadeOut(250, 0, 0, 0)
     this.cameras.main.once('camerafadeoutcomplete', () => {
-      this.scene.restart({ levelId: this._nextLevelId ?? FIRST_LEVEL_ID, priorScore, priorCoins })
+      this.scene.restart({ levelId: this._nextLevelId ?? FIRST_LEVEL_ID, priorScore, priorCoins, priorForms })
     })
   }
 

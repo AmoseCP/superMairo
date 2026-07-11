@@ -28,11 +28,19 @@ export class DualSwitchChest {
     this.plateB = this._addPlate(plateB.x, plateB.y)
     this.chestX = chestX
     this.chestY = chestY
+    // The chest is a solid physical box (stand on it, bump into it) — not
+    // just a decorative marker — so it always gets a real static body,
+    // matching the rect-is-the-hitbox/art-is-an-optional-overlay pattern
+    // every other solid entity in this game already follows (Brick, Pipe,
+    // ...). Previously this had no physics body at all in either the art or
+    // no-art branch, so touching it did nothing and players fell straight
+    // through it.
+    this.chestRect = scene.add.rectangle(chestX, chestY, CHEST_WIDTH, CHEST_HEIGHT, 0x8a5a2b)
+    this.chestRect.setStrokeStyle(2, 0x5c3a1a)
+    scene.physics.add.existing(this.chestRect, true)
+
     this.chestArt = tryArtSprite(scene, chestX, chestY, MISC_ART.chest, CHEST_WIDTH, CHEST_HEIGHT)
-    if (!this.chestArt) {
-      this.chestRect = scene.add.rectangle(chestX, chestY, CHEST_WIDTH, CHEST_HEIGHT, 0x8a5a2b)
-      this.chestRect.setStrokeStyle(2, 0x5c3a1a)
-    }
+    if (this.chestArt) this.chestRect.setVisible(false)
   }
 
   _addPlate(x, y) {

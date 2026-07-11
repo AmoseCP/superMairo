@@ -158,6 +158,11 @@ export class Player {
     return true
   }
 
+  /** Restores a form carried over from the previous level (see GameScene priorForms). */
+  applyForm(form) {
+    if (form === 'big' || form === 'fire') this._setForm(form)
+  }
+
   _setForm(newForm) {
     if (this.form === newForm) return
     const oldHeight = this.rect.height

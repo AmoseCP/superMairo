@@ -23,7 +23,7 @@
   ],
   "movingPlatforms": [
     { "x": 20, "y": 12, "widthTiles": 3, "rangeXTiles": 3, "speed": 50 },
-    { "x": 31, "y": 7, "widthTiles": 3, "rangeYTiles": 4, "speed": 45 },
+    { "x": 31, "y": 7, "widthTiles": 3, "rangeYTiles": 4, "speed": 100 },
     { "x": 199, "y": 12, "widthTiles": 3, "rangeXTiles": 8, "speed": 95 }
   ],
   "enemies": [

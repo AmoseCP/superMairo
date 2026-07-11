@@ -23,11 +23,11 @@ const VISUAL_HEIGHT_SCALE = 1.25
  * breaks, it just pays out once and goes inert, like a coin question block.
  */
 export class Brick {
-  constructor(scene, x, y, { hasCoin = false, onSpawnItem, onBreak } = {}) {
+  constructor(scene, x, y, { hasCoin = false, onCoinAward, onBreak } = {}) {
     this.scene = scene
     this.used = false
     this.hasCoin = hasCoin
-    this.onSpawnItem = onSpawnItem
+    this.onCoinAward = onCoinAward
     this.onBreak = onBreak
     this.baseY = y
 
@@ -62,7 +62,9 @@ export class Brick {
       this.used = true
       if (!this.artSprite) this.rect.setFillStyle(0x8a4a1a)
       this.scene.tweens.add({ targets: this._bumpTargets, y: this.visualY - BUMP_TWEEN_Y, duration: 80, yoyo: true })
-      this.onSpawnItem?.('coin', this.rect.x, this.visualY - SPAWN_ITEM_Y_OFFSET)
+      // Auto-credit the coin to the bumper (classic Mario) instead of
+      // spawning a floating pickup that's easy to never actually collect.
+      this.onCoinAward?.(player, this.rect.x, this.visualY - SPAWN_ITEM_Y_OFFSET)
       return
     }
 

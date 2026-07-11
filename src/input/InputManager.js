@@ -106,6 +106,6 @@ export class InputManager {
   /** True if any action is currently active — used for join-detection and idle tracking. */
   hasAnyInput() {
     const s = this.state
-    return s.left || s.right || s.jump || s.run || s.down
+    return s.left || s.right || s.jump || s.run || s.down || s.action
   }
 }

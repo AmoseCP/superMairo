@@ -17,6 +17,12 @@ const game = new Phaser.Game({
     arcade: {
       gravity: { y: GRAVITY_Y },
       debug: false,
+      // Step physics with the real frame delta instead of a fixed 60Hz tick.
+      // With the default fixed step, any display running faster than 60Hz
+      // (120Hz ProMotion MacBooks, gaming monitors) renders frames where
+      // nothing moved — motion only advances every other frame, which shows
+      // up as constant visible stutter/jitter on every moving object.
+      fixedStep: false,
     },
   },
   scale: {

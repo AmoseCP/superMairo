@@ -14,11 +14,12 @@ const VISUAL_HEIGHT_SCALE = 1.25
  * see GameScene) — spawns its configured item once, then goes inert.
  */
 export class QuestionBlock {
-  constructor(scene, x, y, { itemType = 'coin', onSpawnItem } = {}) {
+  constructor(scene, x, y, { itemType = 'coin', onSpawnItem, onCoinAward } = {}) {
     this.scene = scene
     this.used = false
     this.itemType = itemType
     this.onSpawnItem = onSpawnItem
+    this.onCoinAward = onCoinAward
     this.baseY = y
 
     this.rect = scene.add.rectangle(x, y, TILE_SIZE, TILE_SIZE, 0xf4c95d)
@@ -42,7 +43,7 @@ export class QuestionBlock {
     if (this.artSprite) this.rect.setVisible(false)
   }
 
-  bump(_player) {
+  bump(player) {
     if (this.used) return
     this.used = true
     if (this.artSprite && this.scene.textures.exists(BLOCK_ART.question_used.key)) {
@@ -52,6 +53,12 @@ export class QuestionBlock {
     }
     const targets = this.artSprite ? [this.rect, this.artSprite] : [this.rect]
     this.scene.tweens.add({ targets, y: this.visualY - BUMP_TWEEN_Y, duration: 80, yoyo: true })
-    this.onSpawnItem?.(this.itemType, this.rect.x, this.visualY - SPAWN_ITEM_Y_OFFSET)
+    // A coin block pays the bumper directly (auto-collect, classic Mario);
+    // power-ups still pop out as real pickups.
+    if (this.itemType === 'coin' && this.onCoinAward) {
+      this.onCoinAward(player, this.rect.x, this.visualY - SPAWN_ITEM_Y_OFFSET)
+    } else {
+      this.onSpawnItem?.(this.itemType, this.rect.x, this.visualY - SPAWN_ITEM_Y_OFFSET)
+    }
   }
 }

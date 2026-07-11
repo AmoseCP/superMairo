@@ -1,0 +1,118 @@
+{
+  "id": "1-3",
+  "name": "云端漫步",
+  "widthTiles": 220,
+  "heightTiles": 16,
+  "spawnTile": { "x": 1, "y": 10 },
+  "groundSpans": [],
+  "platforms": [
+    { "fromTile": 0, "toTile": 5, "tileY": 12 },
+    { "fromTile": 8, "toTile": 11, "tileY": 11 },
+    { "fromTile": 14, "toTile": 18, "tileY": 12 },
+    { "fromTile": 27, "toTile": 30, "tileY": 11 },
+    { "fromTile": 35, "toTile": 39, "tileY": 7 },
+    { "fromTile": 42, "toTile": 45, "tileY": 7 },
+    { "fromTile": 48, "toTile": 52, "tileY": 9 },
+    { "fromTile": 55, "toTile": 59, "tileY": 11 },
+    { "fromTile": 62, "toTile": 68, "tileY": 11 },
+    { "fromTile": 71, "toTile": 76, "tileY": 11 },
+    { "fromTile": 79, "toTile": 130, "tileY": 12 },
+    { "fromTile": 134, "toTile": 176, "tileY": 12 },
+    { "fromTile": 187, "toTile": 199, "tileY": 12 },
+    { "fromTile": 210, "toTile": 220, "tileY": 12 }
+  ],
+  "movingPlatforms": [
+    { "x": 20, "y": 12, "widthTiles": 3, "rangeXTiles": 3, "speed": 50 },
+    { "x": 31, "y": 7, "widthTiles": 3, "rangeYTiles": 4, "speed": 45 },
+    { "x": 199, "y": 12, "widthTiles": 3, "rangeXTiles": 8, "speed": 95 }
+  ],
+  "enemies": [
+    { "type": "mochi", "x": 9, "y": 10 },
+    { "type": "mochi", "x": 37, "y": 6 },
+    { "type": "shellbuddy", "x": 50, "y": 8 },
+    { "type": "mochi", "x": 57, "y": 10 },
+    { "type": "shellbuddy", "x": 65, "y": 10 },
+    { "type": "shellbuddy", "x": 71, "y": 10 },
+    { "type": "shellbuddy", "x": 72, "y": 10 },
+    { "type": "shellbuddy", "x": 74, "y": 10 },
+    { "type": "mochi", "x": 90, "y": 11 },
+    { "type": "shellbuddy", "x": 96, "y": 11 },
+    { "type": "mochi", "x": 100, "y": 11 },
+    { "type": "shellbuddy", "x": 112, "y": 11 },
+    { "type": "mochi", "x": 119, "y": 11 },
+    { "type": "mochi", "x": 126, "y": 11 },
+    { "type": "shellbuddy", "x": 138, "y": 11 },
+    { "type": "mochi", "x": 144, "y": 11 },
+    { "type": "mochi", "x": 213, "y": 11 },
+    { "type": "shellbuddy", "x": 216, "y": 11 }
+  ],
+  "waterZones": [{ "fromTile": 187, "toTile": 220 }],
+  "pipes": [
+    { "id": "trap1-3a", "x": 140, "groundTileY": 12, "hasTrap": true },
+    { "id": "trap1-3b", "x": 147, "groundTileY": 12, "hasTrap": true, "trapPhaseOffsetMs": 1367 },
+    { "id": "trap1-3c", "x": 154, "groundTileY": 12, "hasTrap": true, "trapPhaseOffsetMs": 2733 },
+    { "id": "entry1-3", "x": 161, "groundTileY": 12, "enterable": true, "warpToId": "uw1-3" },
+    { "id": "uw1-3", "x": 192, "groundTileY": 12, "enterable": true, "warpToId": "entry1-3" }
+  ],
+  "coins": [
+    { "x": 9, "y": 9 },
+    { "x": 10, "y": 9 },
+    { "x": 15, "y": 11 },
+    { "x": 16, "y": 11 },
+    { "x": 28, "y": 10 },
+    { "x": 29, "y": 10 },
+    { "x": 43, "y": 6 },
+    { "x": 56, "y": 9 },
+    { "x": 82, "y": 10 },
+    { "x": 84, "y": 10 },
+    { "x": 86, "y": 10 },
+    { "x": 88, "y": 10 },
+    { "x": 94, "y": 10 },
+    { "x": 95, "y": 10 },
+    { "x": 105, "y": 11 },
+    { "x": 106, "y": 11 },
+    { "x": 115, "y": 11 },
+    { "x": 116, "y": 11 },
+    { "x": 122, "y": 11 },
+    { "x": 128, "y": 11 },
+    { "x": 129, "y": 11 },
+    { "x": 141, "y": 11 },
+    { "x": 143, "y": 11 },
+    { "x": 189, "y": 9 },
+    { "x": 190, "y": 9 },
+    { "x": 197, "y": 9 },
+    { "x": 211, "y": 9 },
+    { "x": 214, "y": 9 },
+    { "x": 217, "y": 9 }
+  ],
+  "questionBlocks": [
+    { "x": 73, "y": 8, "item": "star" },
+    { "x": 116, "y": 9, "item": "fireflower" }
+  ],
+  "bricks": [
+    { "x": 2, "y": 9 },
+    { "x": 3, "y": 9, "coin": true },
+    { "x": 36, "y": 4 },
+    { "x": 44, "y": 4, "coin": true },
+    { "x": 50, "y": 6 },
+    { "x": 58, "y": 8, "coin": true },
+    { "x": 102, "y": 8 },
+    { "x": 103, "y": 8, "coin": true },
+    { "x": 136, "y": 9 }
+  ],
+  "checkpoints": [
+    { "x": 16, "y": 10 },
+    { "x": 80, "y": 11 },
+    { "x": 104, "y": 11 }
+  ],
+  "dualSwitchChests": [
+    {
+      "plateA": { "x": 63, "y": 11 },
+      "plateB": { "x": 66, "y": 11 },
+      "chestX": 64.5,
+      "chestY": 9,
+      "reward": "star"
+    }
+  ],
+  "flagpoleTile": { "x": 172, "y": 12 }
+}

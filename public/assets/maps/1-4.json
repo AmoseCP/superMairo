@@ -1,6 +1,6 @@
 {
   "id": "1-4",
-  "name": "\u6c99\u4e18\u8ff7\u57ce",
+  "name": "沙丘迷城",
   "widthTiles": 245,
   "heightTiles": 16,
   "spawnTile": {
@@ -405,12 +405,12 @@
   "questionBlocks": [
     {
       "x": 52,
-      "y": 4,
+      "y": 3,
       "item": "mushroom"
     },
     {
       "x": 90,
-      "y": 7,
+      "y": 6,
       "item": "fireflower"
     },
     {
@@ -440,42 +440,42 @@
     },
     {
       "x": 70,
-      "y": 7
+      "y": 6
     },
     {
       "x": 71,
-      "y": 7,
+      "y": 6,
       "coin": true
     },
     {
       "x": 112,
-      "y": 7
+      "y": 6
     },
     {
       "x": 113,
-      "y": 7,
+      "y": 6,
       "coin": true
     },
     {
       "x": 119,
-      "y": 7
+      "y": 6
     },
     {
       "x": 132,
-      "y": 7
+      "y": 6
     },
     {
       "x": 133,
-      "y": 7,
+      "y": 6,
       "coin": true
     },
     {
       "x": 155,
-      "y": 7
+      "y": 6
     },
     {
       "x": 156,
-      "y": 7
+      "y": 6
     }
   ],
   "checkpoints": [

@@ -64,7 +64,10 @@ export class Player {
     scene.physics.add.existing(this.rect)
     this.body = this.rect.body
     this.body.setCollideWorldBounds(true)
-    this.body.setMaxVelocity(PLAYER_RUN_SPEED, 2000 * WORLD_SCALE)
+    // Fall speed is capped so that even on a slow frame (physics now steps
+    // with the real frame delta — see main.js fixedStep note) one step can't
+    // move the body a full tile and tunnel through the ground.
+    this.body.setMaxVelocity(PLAYER_RUN_SPEED, 900 * WORLD_SCALE)
 
     // Real art takes over the moment it exists (see ART.md) — the rect stays
     // as the physics body either way, just hidden once a sprite is drawing
@@ -105,6 +108,11 @@ export class Player {
 
     this.lastGroundedTime = -Infinity
     this.jumpPressedTime = -Infinity
+
+    // Set by GameScene._applyPlatformCarry while standing on a moving
+    // platform — counts as grounded for jump/coyote purposes, since the
+    // glued ride keeps a small air gap that makes body.onFloor() flicker.
+    this._ridingPlatform = null
 
     // Last position with solid ground underfoot — bubbles spawn here (not at
     // the fall position itself, which may be mid-air over the same hazard).
@@ -176,6 +184,7 @@ export class Player {
     this.wasOnFloor = true
     this.lastGroundedTime = -Infinity
     this.jumpPressedTime = -Infinity
+    this._ridingPlatform = null
     this.lastSafeX = x
     this.lastSafeY = y
   }
@@ -187,17 +196,29 @@ export class Player {
     this.hitInvincibleUntil = 0
   }
 
+  /**
+   * Brief post-respawn/rescue mercy window. Without it, an enemy patrolling
+   * across the spawn/checkpoint kills the player again the very frame they
+   * reappear — draining the whole shared-life pool in under a second.
+   */
+  grantSpawnProtection(ms) {
+    this.hitInvincibleUntil = this.scene.time.now + ms
+  }
+
   update(time, delta) {
     if (!this.inputManager) return
     this.inputManager.update()
     const input = this.inputManager.state
 
-    const onFloor = this.body.onFloor()
-    if (onFloor) {
-      this.lastGroundedTime = time
+    // Riding a moving platform counts as grounded (see _ridingPlatform note),
+    // but only genuinely-static footing updates the last-safe respawn spot —
+    // a platform mid-cycle over a pit is not somewhere to bring anyone back.
+    const onFloor = this.body.onFloor() || !!this._ridingPlatform
+    if (this.body.onFloor()) {
       this.lastSafeX = this.rect.x
       this.lastSafeY = this.rect.y
     }
+    if (onFloor) this.lastGroundedTime = time
     if (input.jumpDown) this.jumpPressedTime = time
 
     const withinCoyote = time - this.lastGroundedTime <= COYOTE_TIME_MS

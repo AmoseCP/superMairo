@@ -8,6 +8,7 @@ import {
   GRAVITY_Y,
   WATER_GRAVITY_SCALE,
   FIREBALL_SPEED,
+  PLAYER_JUMP_VELOCITY,
 } from '../config/constants.js'
 import { Pipe } from '../entities/Pipe.js'
 import { AudioManager } from '../systems/AudioManager.js'
@@ -102,7 +103,13 @@ const BRICK_CHIP_OFFSETS = [
 ]
 
 // --- Moving-platform rider carry tolerances (see _applyPlatformCarry) ---
-const PLATFORM_CARRY_Y_TOLERANCE_PX = 6 * WORLD_SCALE
+// How far a rider's feet may hang above / sink into the platform top and
+// still be snapped flush onto it. The gap side must cover one frame of the
+// fastest descending platform on a slow (30fps) frame, or the platform
+// outruns its rider and drops them; the embed side just needs to catch
+// collision-resolution slop.
+const PLATFORM_CARRY_GAP_TOLERANCE_PX = 12 * WORLD_SCALE
+const PLATFORM_CARRY_EMBED_TOLERANCE_PX = 6 * WORLD_SCALE
 const PLATFORM_CARRY_X_MARGIN_PX = 4 * WORLD_SCALE
 
 // --- P1/P2 stacking tolerance (see onP2Spawned's collider processCallback) ---
@@ -229,7 +236,11 @@ export class GameScene extends Phaser.Scene {
 
     this.cameras.main.setBounds(0, worldHeight - CAMERA_VERTICAL_PADDING, worldWidth, CAMERA_VERTICAL_PADDING)
     this.cameras.main.fadeIn(250, 0, 0, 0)
+    // ScaleManager is game-global — its listeners survive scene restarts, so
+    // they must be removed on shutdown or every restart stacks another set
+    // pointing at that run's (destroyed) objects.
     this.scale.on('resize', this._handleResize, this)
+    this.events.once('shutdown', () => this.scale.off('resize', this._handleResize, this))
 
     this.levelCompleteText = this.add
       .text(this.scale.width / 2, this.scale.height / 2, '', {
@@ -241,9 +252,11 @@ export class GameScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setScrollFactor(0)
       .setDepth(2000)
-    this.scale.on('resize', (gameSize) => {
+    const recenterCompleteText = (gameSize) => {
       this.levelCompleteText.setPosition(gameSize.width / 2, gameSize.height / 2)
-    })
+    }
+    this.scale.on('resize', recenterCompleteText)
+    this.events.once('shutdown', () => this.scale.off('resize', recenterCompleteText))
     // Tap/click the completion text itself as a mouse/touch-friendly way to
     // advance — the keyboard/gamepad hint alone isn't discoverable for
     // pointer-only play, so this doubles as the "choose to continue" affordance.
@@ -386,13 +399,16 @@ export class GameScene extends Phaser.Scene {
     // platform's rect silently resets allowGravity/immovable back to true/false
     // regardless of what the MovingPlatform constructor set.
     this.movingPlatformGroup = this.physics.add.group({ allowGravity: false, immovable: true })
-    for (const { x, y, widthTiles = 3, rangeXTiles = 0, rangeYTiles = 0, speed = 60 * WORLD_SCALE } of platformData) {
+    for (const { x, y, widthTiles = 3, rangeXTiles = 0, rangeYTiles = 0, speed = 60 } of platformData) {
       const platform = new MovingPlatform(this, x * TILE_SIZE + (widthTiles * TILE_SIZE) / 2, y * TILE_SIZE + TILE_SIZE / 2, {
         width: widthTiles * TILE_SIZE,
         height: TILE_SIZE,
         rangeX: rangeXTiles * TILE_SIZE,
         rangeY: rangeYTiles * TILE_SIZE,
-        speed,
+        // Level JSON speeds are authored in original (pre-scale) px/s, same
+        // unit LEVELS.md uses (~50px/s clouds) — scale them like every other
+        // speed constant, or platforms crawl at 1/WORLD_SCALE of the design.
+        speed: speed * WORLD_SCALE,
       })
       this.movingPlatforms.push(platform)
       this.movingPlatformGroup.add(platform.rect)
@@ -624,13 +640,14 @@ export class GameScene extends Phaser.Scene {
       const block = new QuestionBlock(this, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, {
         itemType: item,
         onSpawnItem: (type, ix, iy) => this._spawnItem(type, ix, iy),
+        onCoinAward: (player, ix, iy) => this._awardBlockCoin(player, ix, iy),
       })
       this.blocksGroup.add(block.rect)
     }
     for (const { x, y, coin } of brickData) {
       const brick = new Brick(this, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, {
         hasCoin: !!coin,
-        onSpawnItem: (type, ix, iy) => this._spawnItem(type, ix, iy),
+        onCoinAward: (player, ix, iy) => this._awardBlockCoin(player, ix, iy),
         onBreak: (bx, by) => this._onBrickBreak(bx, by),
       })
       this.blocksGroup.add(brick.rect)
@@ -736,15 +753,9 @@ export class GameScene extends Phaser.Scene {
     const who = playerRect === this.coop.p1.rect ? 'p1' : 'p2'
 
     switch (item.type) {
-      case 'coin': {
-        const coinsBefore = this.scoreManager.coins
-        this.scoreManager.addCoin(who)
-        this.audioManager?.playCoin()
-        if (Math.floor(coinsBefore / COINS_PER_EXTRA_LIFE) < Math.floor(this.scoreManager.coins / COINS_PER_EXTRA_LIFE)) {
-          this._award1Up(player)
-        }
+      case 'coin':
+        this._collectCoin(player, who)
         break
-      }
       case 'mushroom':
         player.grow()
         this.audioManager?.playPowerUp()
@@ -759,6 +770,36 @@ export class GameScene extends Phaser.Scene {
         break
     }
     item.destroy()
+  }
+
+  /** Credits a coin to `who` (score + 1UP milestone + sfx) — shared by world coins and block payouts. */
+  _collectCoin(player, who) {
+    const coinsBefore = this.scoreManager.coins
+    this.scoreManager.addCoin(who)
+    this.audioManager?.playCoin()
+    if (Math.floor(coinsBefore / COINS_PER_EXTRA_LIFE) < Math.floor(this.scoreManager.coins / COINS_PER_EXTRA_LIFE)) {
+      this._award1Up(player)
+    }
+  }
+
+  /**
+   * A coin knocked out of a brick/question block is credited to the bumping
+   * player immediately (classic Mario behavior) — the old version spawned a
+   * collectible coin floating above the block, which was easy to miss and
+   * made block coins look like they never scored. A short rise-and-fade
+   * animation keeps the visual payoff.
+   */
+  _awardBlockCoin(player, x, y) {
+    this._collectCoin(player, this._whoFor(player))
+    const coin = this.add.circle(x, y, 9 * WORLD_SCALE, 0xffd700).setDepth(1500)
+    this.tweens.add({
+      targets: coin,
+      y: y - 60 * WORLD_SCALE,
+      alpha: 0,
+      duration: 450,
+      ease: 'Sine.easeOut',
+      onComplete: () => coin.destroy(),
+    })
   }
 
   /** Every COINS_PER_EXTRA_LIFE coins collected — classic "1UP" floating text + a shared bonus life. */
@@ -851,27 +892,56 @@ export class GameScene extends Phaser.Scene {
   }
 
   // Arcade Physics doesn't automatically carry a rider standing on a
-  // velocity-driven immovable body — nudge them by the platform's own
-  // per-frame delta if they're standing on top of it.
+  // velocity-driven immovable body — glue anyone standing on top of it to
+  // the platform's top surface each frame, tracked as an explicit riding
+  // state (player._ridingPlatform, also read by Player.update for
+  // grounded/jump checks).
+  //
+  // Two hard-won constraints shape this implementation:
+  // 1. SNAP the rider's feet flush to the surface, never add the platform's
+  //    per-frame delta. Additive carry pushes the rider *into* a descending
+  //    platform a little deeper every frame; once the embed exceeds Arcade's
+  //    max-overlap threshold (player delta + platform delta + OVERLAP_BIAS),
+  //    separation gives up entirely and the rider free-falls straight
+  //    through the platform — reproduced consistently on 1-3's vertical lift.
+  // 2. Riding must be STICKY (only a real jump or walking off the side
+  //    releases it). Relying on per-frame proximity alone drops the rider
+  //    at the top of the lift's cycle: while being pushed up they carry the
+  //    platform's upward velocity, so the moment it reverses they launch
+  //    ballistically, then free-fall after the now-descending platform and
+  //    tunnel through it exactly as in (1).
   _applyPlatformCarry() {
     if (this.movingPlatforms.length === 0) return
     const riders = [this.coop.p1, this.coop.p2Joined ? this.coop.p2 : null].filter(Boolean)
-    for (const platform of this.movingPlatforms) {
-      if (platform.deltaX === 0 && platform.deltaY === 0) continue
-      for (const rider of riders) {
-        if (!rider.rect.visible || !rider.body.touching.down) continue
-        const riderBottom = rider.rect.y + rider.rect.height / 2
-        const platTop = platform.rect.y - platform.rect.height / 2
-        const withinY = Math.abs(riderBottom - platTop) < PLATFORM_CARRY_Y_TOLERANCE_PX
+    for (const rider of riders) {
+      if (!rider.rect.visible || !rider.body.enable || rider.body.velocity.y < -PLAYER_JUMP_VELOCITY / 2) {
+        rider._ridingPlatform = null // gone (bubbled/warped) or jumped away
+        continue
+      }
+      let attached = null
+      for (const platform of this.movingPlatforms) {
         const withinX =
           rider.rect.x >= platform.rect.x - platform.rect.width / 2 - PLATFORM_CARRY_X_MARGIN_PX &&
           rider.rect.x <= platform.rect.x + platform.rect.width / 2 + PLATFORM_CARRY_X_MARGIN_PX
-        if (withinY && withinX) {
-          rider.rect.x += platform.deltaX
-          rider.rect.y += platform.deltaY
-          rider.body.updateFromGameObject()
-        }
+        if (!withinX) continue
+        const platTop = platform.rect.y - platform.rect.height / 2
+        const gap = platTop - (rider.rect.y + rider.rect.height / 2) // >0: feet above surface
+        const wasRiding = rider._ridingPlatform === platform
+        const withinY = gap > -PLATFORM_CARRY_EMBED_TOLERANCE_PX && gap < PLATFORM_CARRY_GAP_TOLERANCE_PX
+        if (!withinY && !wasRiding) continue
+        // First attach only while falling/standing — never snatch a player
+        // who is jumping up past the platform.
+        if (!wasRiding && rider.body.velocity.y < -1) continue
+        attached = platform
+        rider.rect.x += platform.deltaX
+        rider.rect.y = platTop - rider.rect.height / 2
+        rider.body.updateFromGameObject()
+        // Position is authoritative while riding; residual velocity (e.g.
+        // the ascent push) would just re-launch the rider at reversals.
+        rider.body.setVelocityY(0)
+        break
       }
+      rider._ridingPlatform = attached
     }
   }
 

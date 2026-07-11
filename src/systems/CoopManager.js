@@ -2,6 +2,7 @@ import {
   BUBBLE_RESCUE_WINDOW_MS,
   CAMERA_EDGE_MARGIN,
   CAMERA_LERP,
+  HIT_INVINCIBLE_MS,
   P2_IDLE_LEAVE_MS,
   SHARED_LIVES_START,
   WORLD_SCALE,
@@ -204,6 +205,7 @@ export class CoopManager {
     const player = who === 'p1' ? this.p1 : this.p2
     player.teleportTo(bubble.x, bubble.y)
     player.setActive(true)
+    player.grantSpawnProtection(HIT_INVINCIBLE_MS)
     this.audioManager?.playRescue()
     if (who === 'p1') this.p1Bubble = null
     else this.p2Bubble = null
@@ -229,6 +231,8 @@ export class CoopManager {
     player.teleportTo(respawn.x + offsetX, respawn.y)
     player.resetForm()
     player.setActive(true)
+    // AFTER resetForm (which zeroes invincibility) — see grantSpawnProtection.
+    player.grantSpawnProtection(HIT_INVINCIBLE_MS)
   }
 
   _gameOver() {

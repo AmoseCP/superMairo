@@ -38,7 +38,7 @@ export class HUDScene extends Phaser.Scene {
 
     const coop = gs.coop
     const hearts = '❤'.repeat(Math.max(0, coop.sharedLives))
-    const p2Status = coop.p2Joined ? 'P2 已加入 🐱' : '按 IJKL/U 或手柄2 加入 P2'
+    const p2Status = coop.p2Joined ? 'P2 已加入 🐱' : '按 IJKL/U 或手柄1 加入 P2'
     const elapsedSec = Math.floor((time - gs.startTime) / 1000)
     const muteIcon = gs.audioManager?.muted ? '🔇（M 开启声音）' : '🔊（M 静音）'
     // Fire breath (F) only works in fire form, which needs a mushroom (small→big)

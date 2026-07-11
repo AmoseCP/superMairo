@@ -151,6 +151,16 @@
       "type": "mochi",
       "x": 199,
       "y": 9
+    },
+    {
+      "type": "mochi",
+      "x": 142,
+      "y": 9
+    },
+    {
+      "type": "shellbuddy",
+      "x": 151,
+      "y": 9
     }
   ],
   "waterZones": [
@@ -162,13 +172,13 @@
   "pipes": [
     {
       "id": "trap1-2a",
-      "x": 140,
+      "x": 138,
       "groundTileY": 10,
       "hasTrap": true
     },
     {
       "id": "trap1-2b",
-      "x": 149,
+      "x": 147,
       "groundTileY": 10,
       "hasTrap": true,
       "trapPhaseOffsetMs": 2050
@@ -316,6 +326,30 @@
     {
       "x": 204,
       "y": 9
+    },
+    {
+      "x": 141,
+      "y": 7
+    },
+    {
+      "x": 142,
+      "y": 7
+    },
+    {
+      "x": 143,
+      "y": 7
+    },
+    {
+      "x": 150,
+      "y": 7
+    },
+    {
+      "x": 151,
+      "y": 7
+    },
+    {
+      "x": 152,
+      "y": 7
     }
   ],
   "questionBlocks": [

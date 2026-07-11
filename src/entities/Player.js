@@ -9,6 +9,7 @@ import {
   PLAYER_SMALL_HEIGHT,
   PLAYER_WALK_SPEED,
   STAR_INVINCIBLE_MS,
+  WATER_SPEED_SCALE,
   WORLD_SCALE,
 } from '../config/constants.js'
 import { PLAYER_ART } from '../config/assets.js'
@@ -240,7 +241,10 @@ export class Player {
     }
     this.wasOnFloor = onFloor
 
-    const targetSpeed = input.run ? PLAYER_RUN_SPEED : PLAYER_WALK_SPEED
+    // _inWater is maintained by GameScene._updateWaterGravity — swimming
+    // caps horizontal speed at 75% of the equivalent land speed.
+    const speedScale = this._inWater ? WATER_SPEED_SCALE : 1
+    const targetSpeed = (input.run ? PLAYER_RUN_SPEED : PLAYER_WALK_SPEED) * speedScale
     let targetVelX = 0
     if (input.left) targetVelX = -targetSpeed
     if (input.right) targetVelX = targetSpeed

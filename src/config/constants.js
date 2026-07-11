@@ -48,4 +48,10 @@ export const TIME_BONUS_DECAY_PER_SECOND = 5
 // Multiplier on world gravity while a player is inside an underwater area —
 // not spatial/velocity in the WORLD_SCALE sense (it's a ratio), so it's
 // deliberately not multiplied by WORLD_SCALE.
-export const WATER_GRAVITY_SCALE = 0.35
+// Jump height scales inversely with gravity (h = v²/2g), so 0.5 makes an
+// underwater jump peak at exactly 2× the on-land height — the tuned feel
+// for the bonus areas (0.35 floated absurdly high, ~10 tiles).
+export const WATER_GRAVITY_SCALE = 0.5
+// Horizontal move-speed multiplier while swimming — water drags you to 75%
+// of the equivalent land walk/run speed.
+export const WATER_SPEED_SCALE = 0.75

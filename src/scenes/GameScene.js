@@ -128,6 +128,9 @@ const ONE_UP_FONT_SIZE = `${28 * WORLD_SCALE}px`
 
 // --- Pipes / underwater warp (see _loadPipes, _checkPipeEntry, _updateWaterGravity) ---
 const PIPE_WARP_FADE_MS = 200
+// Sideways landing offset for the teammate carried along by a co-op warp —
+// small enough that both still stand on the 2-tile-wide pipe mouth.
+const PIPE_WARP_COMPANION_OFFSET_PX = 15 * WORLD_SCALE
 const PIPE_TRAP_DAMAGE_COOLDOWN_MS = 800
 const WATER_TINT_COLOR = 0x1f6fb2
 const WATER_TINT_ALPHA = 0.28
@@ -173,6 +176,9 @@ export class GameScene extends Phaser.Scene {
     const level = this.cache.json.get(`level-${this.levelId}`)
     this.level = level
     this.levelComplete = false
+    // Not carried across restarts — a warp fade interrupted by level change
+    // must not leave warps permanently locked.
+    this._pipeWarpInProgress = false
 
     const worldWidth = level.widthTiles * TILE_SIZE
     const worldHeight = level.heightTiles * TILE_SIZE
@@ -562,12 +568,29 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  _warpPlayerToPipe(player, destinationPipe) {
+  /**
+   * Warps the initiating player AND any active teammate together — co-op
+   * never splits across the warp (user request: P1 entering takes P2 along,
+   * and coming back out brings both out). The initiator lands centered on
+   * the destination mouth, the teammate slightly to the side so they don't
+   * stack. A bubbled teammate is skipped (they're not in play; their bubble
+   * timer/rescue flow continues unchanged).
+   */
+  _warpPlayerToPipe(initiator, destinationPipe) {
+    if (this._pipeWarpInProgress) return // both players triggering the same frame
+    this._pipeWarpInProgress = true
     this.audioManager?.playPipeWarp()
     this.cameras.main.fadeOut(PIPE_WARP_FADE_MS, 0, 0, 0)
     this.cameras.main.once('camerafadeoutcomplete', () => {
-      const landY = destinationPipe.mouthY - player.rect.height / 2 - 2
-      player.teleportTo(destinationPipe.x, landY)
+      const travellers = [
+        this.coop.p1Bubble ? null : this.coop.p1,
+        this.coop.p2Joined && !this.coop.p2Bubble ? this.coop.p2 : null,
+      ].filter(Boolean)
+      for (const player of travellers) {
+        const offsetX = player === initiator ? 0 : PIPE_WARP_COMPANION_OFFSET_PX
+        player.teleportTo(destinationPipe.x + offsetX, destinationPipe.mouthY - player.rect.height / 2 - 2)
+      }
+      this._pipeWarpInProgress = false
       this.cameras.main.fadeIn(PIPE_WARP_FADE_MS, 0, 0, 0)
     })
   }

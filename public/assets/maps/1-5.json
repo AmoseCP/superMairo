@@ -189,6 +189,21 @@
       "type": "mochi",
       "x": 251,
       "y": 10
+    },
+    {
+      "type": "mochi",
+      "x": 182,
+      "y": 10
+    },
+    {
+      "type": "shellbuddy",
+      "x": 190,
+      "y": 10
+    },
+    {
+      "type": "mochi",
+      "x": 198,
+      "y": 10
     }
   ],
   "waterZones": [
@@ -200,30 +215,23 @@
   "pipes": [
     {
       "id": "trap1-5a",
-      "x": 185,
+      "x": 178,
       "groundTileY": 11,
       "hasTrap": true
     },
     {
       "id": "trap1-5b",
-      "x": 189,
+      "x": 186,
       "groundTileY": 11,
       "hasTrap": true,
       "trapPhaseOffsetMs": 1025
     },
     {
       "id": "trap1-5c",
-      "x": 193,
+      "x": 194,
       "groundTileY": 11,
       "hasTrap": true,
       "trapPhaseOffsetMs": 2050
-    },
-    {
-      "id": "trap1-5d",
-      "x": 197,
-      "groundTileY": 11,
-      "hasTrap": true,
-      "trapPhaseOffsetMs": 3075
     },
     {
       "id": "entry1-5",
@@ -382,7 +390,7 @@
       "y": 10
     },
     {
-      "x": 226,
+      "x": 224,
       "y": 10
     },
     {
@@ -404,6 +412,42 @@
     {
       "x": 250,
       "y": 10
+    },
+    {
+      "x": 181,
+      "y": 8
+    },
+    {
+      "x": 182,
+      "y": 8
+    },
+    {
+      "x": 183,
+      "y": 8
+    },
+    {
+      "x": 189,
+      "y": 8
+    },
+    {
+      "x": 190,
+      "y": 8
+    },
+    {
+      "x": 191,
+      "y": 8
+    },
+    {
+      "x": 197,
+      "y": 8
+    },
+    {
+      "x": 198,
+      "y": 8
+    },
+    {
+      "x": 199,
+      "y": 8
     }
   ],
   "questionBlocks": [

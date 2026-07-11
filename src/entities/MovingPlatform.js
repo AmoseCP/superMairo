@@ -33,6 +33,19 @@ export class MovingPlatform {
     this.body = this.rect.body
     this.body.setAllowGravity(false)
     this.body.setImmovable(true)
+    // One-way platform, classic Mario-lift style: only the TOP face is solid.
+    // A moving platform that's solid on all sides is lethal around pits — a
+    // player jumping toward it mid-cycle clips its side/bottom, gets bonked
+    // out of their jump arc, and falls to their death even though they aimed
+    // correctly (reproduced 6/8 realistic boarding deaths on 1-3's elevator).
+    // With side/bottom collision off, any jump whose arc crosses the top
+    // face from above lands safely, and jumping up through it from below
+    // pops the player onto the platform instead of head-bonking. NOTE: this
+    // disables faces on the PLATFORM's own body only — the player's body is
+    // untouched (see PLAN.md §7 item 2 for why that distinction matters).
+    this.body.checkCollision.down = false
+    this.body.checkCollision.left = false
+    this.body.checkCollision.right = false
 
     // Widths vary a lot per instance (widthTiles * TILE_SIZE) — real art gets
     // stretched to fit whatever width this particular platform needs, so

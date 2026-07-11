@@ -396,6 +396,13 @@ export class GameScene extends Phaser.Scene {
       })
       this.movingPlatforms.push(platform)
       this.movingPlatformGroup.add(platform.rect)
+      // Re-assert the one-way faces after group.add — checkCollision isn't
+      // in the Group-defaults reset list today, but this session has been
+      // burned three times by add() silently reverting body settings, so
+      // keep the platform's contract explicit here rather than trusting it.
+      platform.body.checkCollision.down = false
+      platform.body.checkCollision.left = false
+      platform.body.checkCollision.right = false
     }
     this.physics.add.collider(this.enemyGroup, this.movingPlatformGroup)
     this.physics.add.collider(this.itemsGroup, this.movingPlatformGroup)

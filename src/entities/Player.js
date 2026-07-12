@@ -1,6 +1,7 @@
 import {
   COYOTE_TIME_MS,
   HIT_INVINCIBLE_MS,
+  ICE_ACCEL_SCALE,
   JUMP_BUFFER_MS,
   PLAYER_ACCEL,
   PLAYER_BIG_HEIGHT,
@@ -114,6 +115,14 @@ export class Player {
     // platform — counts as grounded for jump/coyote purposes, since the
     // glued ride keeps a small air gap that makes body.onFloor() flicker.
     this._ridingPlatform = null
+
+    // Set by GameScene._updateIceState while standing on an ice zone —
+    // slashes acceleration so the player slides (see ICE_ACCEL_SCALE).
+    this._onIce = false
+
+    // Set by GameScene._updateWind each frame — a velocity bias (px/s) that
+    // shifts the movement equilibrium sideways during a gust.
+    this._windVelX = 0
 
     // Last position with solid ground underfoot — bubbles spawn here (not at
     // the fall position itself, which may be mid-air over the same hazard).
@@ -248,14 +257,20 @@ export class Player {
     let targetVelX = 0
     if (input.left) targetVelX = -targetSpeed
     if (input.right) targetVelX = targetSpeed
+    // Facing follows INPUT only (wind must not flip your fireball direction).
+    if (targetVelX !== 0) this.facing = Math.sign(targetVelX)
+    // Wind shifts the equilibrium: drifting with no input reaches the wind
+    // speed; pushing into it nets (own speed − wind). Grounded feels half.
+    if (this._windVelX) targetVelX += this._windVelX * (onFloor ? 0.5 : 1)
 
     const diff = targetVelX - this.body.velocity.x
-    const maxChange = PLAYER_ACCEL * (delta / 1000)
+    // On ice the accel clamp shrinks — starting AND stopping both smear out
+    // into a slide. Airborne keeps normal control (classic ice-level rule).
+    const accelScale = this._onIce && onFloor ? ICE_ACCEL_SCALE : 1
+    const maxChange = PLAYER_ACCEL * accelScale * (delta / 1000)
     const newVelX =
       Math.abs(diff) <= maxChange ? targetVelX : this.body.velocity.x + Math.sign(diff) * maxChange
     this.body.setVelocityX(newVelX)
-
-    if (targetVelX !== 0) this.facing = Math.sign(targetVelX)
 
     this._updateFace()
 

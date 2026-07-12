@@ -65,6 +65,13 @@ export class CandySlimeKing extends Enemy {
     this.speed = this.phase.speed * this.speedMultiplier
     super.update()
 
+    // Slam landing detection — subclasses hook _onSlamLand (2-5 sovereigns
+    // leave an ice patch / flame burst where they hit the ground).
+    if (this._slamAirborne && this.body.onFloor()) {
+      this._slamAirborne = false
+      this._onSlamLand(this.rect.x, this.rect.y + this.rect.height / 2)
+    }
+
     const phase = this.phase
     if (!this.telegraphing && time >= this.nextAttackAt - phase.telegraphMs) {
       this.telegraphing = true
@@ -74,8 +81,32 @@ export class CandySlimeKing extends Enemy {
       this.telegraphing = false
       this._clearTint()
       this.nextAttackAt = time + phase.attackInterval
-      if (this.body.onFloor()) this.body.setVelocityY(-SLAM_HOP_VELOCITY) // the "slam" hop
+      if (this.body.onFloor()) {
+        this.body.setVelocityY(-SLAM_HOP_VELOCITY) // the "slam" hop
+        this._slamAirborne = true
+      }
     }
+  }
+
+  /** Landing point of a slam hop — base boss has no side effect. */
+  _onSlamLand() {}
+
+  /**
+   * Ranged (fireball/shell) hits don't one-shot a boss the way they kill
+   * small enemies — every 3rd hit counts as one stomp of damage. Without
+   * this a persistent fire-form player deletes the boss in one shot.
+   */
+  onHitByShell() {
+    if (this.dead) return
+    this._rangedHits = (this._rangedHits ?? 0) + 1
+    if (this._rangedHits % 3 !== 0) {
+      this._setTint(0xffe0b3)
+      this.scene.time.delayedCall(120, () => {
+        if (!this.dead && !this.telegraphing) this._clearTint()
+      })
+      return
+    }
+    this.onStomp()
   }
 
   onStomp() {

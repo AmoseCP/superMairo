@@ -1,5 +1,5 @@
 import Phaser from 'phaser'
-import { LEVELS, FIRST_LEVEL_ID } from '../config/levels.js'
+import { LEVELS } from '../config/levels.js'
 import { allArtAssets } from '../config/assets.js'
 import { allAudioAssets } from '../config/audio.js'
 
@@ -35,6 +35,6 @@ export class BootScene extends Phaser.Scene {
   }
 
   create() {
-    this.scene.start('GameScene', { levelId: FIRST_LEVEL_ID })
+    this.scene.start('LevelSelectScene')
   }
 }

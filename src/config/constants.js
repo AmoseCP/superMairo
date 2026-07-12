@@ -55,3 +55,11 @@ export const WATER_GRAVITY_SCALE = 0.5
 // Horizontal move-speed multiplier while swimming — water drags you to 75%
 // of the equivalent land walk/run speed.
 export const WATER_SPEED_SCALE = 0.75
+
+// --- World 2 environment forces (see LEVELS2.md) ---
+// Acceleration multiplier while standing on ice (2-1). The existing
+// "target speed + accel-clamped change" movement code turns low accel into
+// natural sliding/drifting — no separate friction model needed. Tuned so a
+// full-speed run takes ~3 tiles to stop after releasing the key
+// (slide d = v²/2a: 600²/(2·5400·0.12) ≈ 278px ≈ 2.9 tiles).
+export const ICE_ACCEL_SCALE = 0.12

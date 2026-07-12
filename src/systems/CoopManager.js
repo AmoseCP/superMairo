@@ -276,6 +276,12 @@ export class CoopManager {
         } else if (p.rect.x > view.right - CAMERA_EDGE_MARGIN && p.body.velocity.x > 0) {
           p.body.setVelocityX(0)
         }
+        // Vertical soft wall — the tall tower level (2-4) lets players split
+        // vertically; same rule as the horizontal edges: you can't move
+        // further out of view, gravity/teammate movement re-converges you.
+        if (p.rect.y < view.y + CAMERA_EDGE_MARGIN && p.body.velocity.y < 0) {
+          p.body.setVelocityY(0)
+        }
       }
     }
     this._updateJoinArrow(view)

@@ -30,7 +30,7 @@ import { CheckpointManager } from '../systems/CheckpointManager.js'
 import { DualSwitchChest } from '../entities/DualSwitchChest.js'
 import { TimedDoor } from '../entities/TimedDoor.js'
 import { TouchControls } from '../input/TouchControls.js'
-import { LEVELS, FIRST_LEVEL_ID } from '../config/levels.js'
+import { LEVELS } from '../config/levels.js'
 import { MISC_ART, backgroundArtFor } from '../config/assets.js'
 import { tryArtSprite } from '../utils/artSwap.js'
 
@@ -1050,7 +1050,7 @@ export class GameScene extends Phaser.Scene {
     this._nextLevelId = levelIds[levelIds.indexOf(this.levelId) + 1]
     const retryHint = this._nextLevelId
       ? '按 Space / 手柄 A 键，或点击本段文字，进入下一关'
-      : '🏆 恭喜通关全部关卡！按 Space / 手柄 A 键，或点击本段文字，回到第一关'
+      : '🏆 全部关卡通关！按 Space / 手柄 A 键，或点击本段文字，查看总成绩'
     this.levelCompleteText.setText(`🎉 ${this.level.name} 通关！\n${scoreSummary}\n${retryHint}`)
 
     this.saveManager.unlockLevel(this.levelId)
@@ -1067,16 +1067,28 @@ export class GameScene extends Phaser.Scene {
     if (this._levelCompleteAdvancing) return
     this._levelCompleteAdvancing = true
     this.scene.stop('HUDScene') // launched separately — restart() won't touch it on its own
-    // Looping back to level 1 after clearing everything starts a brand-new
-    // playthrough, so the running totals reset there instead of growing forever.
-    const priorScore = this._nextLevelId ? this.totalScore : 0
-    const priorCoins = this._nextLevelId ? this.totalCoins : 0
-    const priorForms = this._nextLevelId
-      ? { p1: this.coop.p1.form, p2: this.coop.p2?.form ?? 'small' }
-      : null
     this.cameras.main.fadeOut(250, 0, 0, 0)
     this.cameras.main.once('camerafadeoutcomplete', () => {
-      this.scene.restart({ levelId: this._nextLevelId ?? FIRST_LEVEL_ID, priorScore, priorCoins, priorForms })
+      if (this._nextLevelId) {
+        this.scene.restart({
+          levelId: this._nextLevelId,
+          priorScore: this.totalScore,
+          priorCoins: this.totalCoins,
+          priorForms: { p1: this.coop.p1.form, p2: this.coop.p2?.form ?? 'small' },
+        })
+      } else {
+        // All levels cleared — show the run's final results instead of
+        // silently looping back into level 1 (VictoryScene offers the restart).
+        this.scene.start('VictoryScene', {
+          score: this.totalScore,
+          coins: this.totalCoins,
+          coop: this.coop.p2Joined,
+          p1Score: this.scoreManager.playerScore('p1'),
+          p2Score: this.scoreManager.playerScore('p2'),
+          p1: { ...this.scoreManager.perPlayer.p1 },
+          p2: { ...this.scoreManager.perPlayer.p2 },
+        })
+      }
     })
   }
 

@@ -3,6 +3,7 @@ import { BootScene } from './scenes/BootScene.js'
 import { GameScene } from './scenes/GameScene.js'
 import { HUDScene } from './scenes/HUDScene.js'
 import { GameOverScene } from './scenes/GameOverScene.js'
+import { VictoryScene } from './scenes/VictoryScene.js'
 import { GRAVITY_Y } from './config/constants.js'
 
 const game = new Phaser.Game({
@@ -37,7 +38,7 @@ const game = new Phaser.Game({
   input: {
     gamepad: true,
   },
-  scene: [BootScene, GameScene, HUDScene, GameOverScene],
+  scene: [BootScene, GameScene, HUDScene, GameOverScene, VictoryScene],
 })
 
 // Dev/debug hook only (e.g. automated Playwright smoke tests reading scene state).

@@ -120,6 +120,20 @@ for (const file of readdirSync(MAPS).filter((f) => f.endsWith('.json')).sort()) 
     }
   }
 
+  // ---- 4.5 出生点/检查点复活不得嵌入地面（嵌入=分离失效直接穿地，连锁死亡）----
+  const PLAYER_HALF = 60 // 小形态半高（px）
+  const respawnPoints = [{ ...d.spawnTile, kind: 'spawn' }, ...(d.checkpoints ?? []).map((c) => ({ ...c, kind: 'checkpoint' }))]
+  for (const pt of respawnPoints) {
+    const feet = pt.y * TILE + TILE / 2 + PLAYER_HALF
+    const floors = S.filter((s) => ['ground', 'platform', 'crumble'].includes(s.kind) && s.x0 <= pt.x && pt.x < s.x1 && s.top * TILE >= pt.y * TILE)
+    if (!floors.length) {
+      report(lvl, `${pt.kind}(${pt.x},${pt.y}) 下方无地面（复活即坠亡）`)
+      continue
+    }
+    const floorTop = Math.min(...floors.map((f) => f.top)) * TILE
+    if (feet > floorTop) report(lvl, `${pt.kind}(${pt.x},${pt.y}) 复活时脚部嵌入地面 ${feet - floorTop}px（会穿地连锁死亡）`)
+  }
+
   // ---- 5. 纵版关逐列兜底 ----
   if (d.vertical) {
     for (let x = 0; x < d.widthTiles; x++) {

@@ -44,7 +44,7 @@ export class VictoryScene extends Phaser.Scene {
       .setOrigin(0.5)
 
     this.add
-      .text(cx, cy + 80, '按 Space / 手柄 A 键，或点击屏幕，开始新一轮挑战', {
+      .text(cx, cy + 80, '按 Space / 手柄 A 键，或点击屏幕，返回选关', {
         fontFamily: 'sans-serif',
         fontSize: '18px',
         color: '#f2f2f2',
@@ -66,7 +66,7 @@ export class VictoryScene extends Phaser.Scene {
     this._restarting = true
     this.cameras.main.fadeOut(250, 0, 0, 0)
     this.cameras.main.once('camerafadeoutcomplete', () => {
-      this.scene.start('GameScene', { levelId: FIRST_LEVEL_ID })
+      this.scene.start('LevelSelectScene')
     })
   }
 }

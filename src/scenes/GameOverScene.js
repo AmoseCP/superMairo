@@ -1,4 +1,5 @@
 import Phaser from 'phaser'
+import { LEVELS } from '../config/levels.js'
 
 export class GameOverScene extends Phaser.Scene {
   constructor() {
@@ -23,12 +24,18 @@ export class GameOverScene extends Phaser.Scene {
     this.cameras.main.fadeIn(250, 0, 0, 0)
     this._retrying = false
 
-    const summary = this.coop
-      ? `游戏结束\nP1 本关得分：${this.p1Score}（🪙${this.p1.coins} ⚔${this.p1.kills}）　P2 本关得分：${this.p2Score}（🪙${this.p2.coins} ⚔${this.p2.kills}）\n团队总得分：${this.score}`
-      : `游戏结束\n总得分：${this.score}　金币：${this.coins}`
+    // 综合成绩面板：生命耗尽时展示整轮累计数据，然后回到选关画面。
+    const levelName = LEVELS[this.levelId]?.name ?? this.levelId
+    const coopLine = this.coop
+      ? `\n最终关表现　P1：${this.p1Score}（🪙${this.p1.coins} ⚔${this.p1.kills}）　P2：${this.p2Score}（🪙${this.p2.coins} ⚔${this.p2.kills}）`
+      : ''
+    const summary =
+      `💔 生命耗尽 —— 本轮综合成绩\n\n` +
+      `总得分：${this.score}　总金币：${this.coins}\n` +
+      `止步于：${levelName}（${this.levelId}）${coopLine}`
 
     this.add
-      .text(cx, cy - 40, summary, {
+      .text(cx, cy - 50, summary, {
         fontFamily: 'sans-serif',
         fontSize: '28px',
         color: '#ff8fc7',
@@ -37,7 +44,7 @@ export class GameOverScene extends Phaser.Scene {
       .setOrigin(0.5)
 
     this.add
-      .text(cx, cy + 50, '按 Space / 手柄 A 键重新挑战', {
+      .text(cx, cy + 90, '按 Space / 手柄 A 键，或点击屏幕，返回选关', {
         fontFamily: 'sans-serif',
         fontSize: '18px',
         color: '#f2f2f2',
@@ -45,19 +52,21 @@ export class GameOverScene extends Phaser.Scene {
       })
       .setOrigin(0.5)
 
-    this.input.keyboard.once('keydown-SPACE', () => this._retry())
+    this.input.keyboard.once('keydown-SPACE', () => this._toLevelSelect())
+    this.input.once('pointerdown', () => this._toLevelSelect())
   }
 
   update() {
     const pad = this.input.gamepad?.getPad(0)
-    if (pad?.A && !this._retrying) this._retry()
+    if (pad?.A && !this._retrying) this._toLevelSelect()
   }
 
-  _retry() {
+  _toLevelSelect() {
+    if (this._retrying) return
     this._retrying = true
     this.cameras.main.fadeOut(250, 0, 0, 0)
     this.cameras.main.once('camerafadeoutcomplete', () => {
-      this.scene.start('GameScene', { levelId: this.levelId })
+      this.scene.start('LevelSelectScene')
     })
   }
 }

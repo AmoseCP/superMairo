@@ -24,6 +24,10 @@ export const ENEMY_ART = {
   // (state = shell_idle/shell_moving). Falls back to enemy_shellbuddy if absent.
   shellbuddy_shell: { key: 'enemy_shellbuddy_shell', path: 'assets/sprites/enemy_shellbuddy_shell.png', scale: 1.15 },
   candyslimeking: { key: 'enemy_boss', path: 'assets/sprites/enemy_boss.png', scale: 1.1 },
+  // --- World 2 (LEVELS2.md) ---
+  iceshell: { key: 'enemy_iceshell', path: 'assets/sprites/enemy_iceshell.png', scale: 1.15 },
+  bat: { key: 'enemy_bat', path: 'assets/sprites/enemy_bat.png', scale: 1.15 },
+  gearmochi: { key: 'enemy_gearmochi', path: 'assets/sprites/enemy_gearmochi.png', scale: 1.15 },
 }
 
 export const ITEM_ART = {
@@ -31,6 +35,7 @@ export const ITEM_ART = {
   mushroom: { key: 'item_mushroom', path: 'assets/sprites/item_mushroom.png' },
   fireflower: { key: 'item_fireflower', path: 'assets/sprites/item_fireflower.png' },
   star: { key: 'item_star', path: 'assets/sprites/item_star.png' },
+  lantern: { key: 'item_lantern', path: 'assets/sprites/item_lantern.png' },
 }
 
 export const BLOCK_ART = {
@@ -63,7 +68,7 @@ export function backgroundArtFor(levelId) {
   return { key: `bg_${levelId}`, path: `assets/backgrounds/bg-${levelId}.png` }
 }
 
-const LEVEL_IDS = ['1-1', '1-2', '1-3', '1-4', '1-5']
+const LEVEL_IDS = ['1-1', '1-2', '1-3', '1-4', '1-5', '2-1', '2-2', '2-3', '2-4', '2-5']
 
 /** Every {key, path} entry worth trying to preload — used by BootScene. Missing files just 404 quietly; nothing here is required to exist yet. */
 export function allArtAssets() {

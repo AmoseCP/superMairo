@@ -3,7 +3,7 @@ import { WORLD_SCALE } from '../../config/constants.js'
 import { ENEMY_ART } from '../../config/assets.js'
 
 const STATE = { WALK: 'walk', SHELL_IDLE: 'shell_idle', SHELL_MOVING: 'shell_moving' }
-const SHELL_SPEED = 220 * WORLD_SCALE
+const DEFAULT_SHELL_SPEED = 220 * WORLD_SCALE
 const STRIPE_COLOR = 0xffe8c2
 const STRIPE_WIDTH = 22 * WORLD_SCALE
 const STRIPE_HEIGHT = 4 * WORLD_SCALE
@@ -28,6 +28,8 @@ export class ShellBuddy extends Enemy {
       ...opts,
     })
     this.state = STATE.WALK
+    // Instance field so subclasses (IceShell) can run a faster shell.
+    this.shellSpeed = DEFAULT_SHELL_SPEED
     this._shellArtKey =
       this.artSprite && scene.textures.exists(ENEMY_ART.shellbuddy_shell.key) ? ENEMY_ART.shellbuddy_shell.key : null
 
@@ -66,7 +68,7 @@ export class ShellBuddy extends Enemy {
     if (this.state === STATE.SHELL_MOVING) {
       if (this.body.blocked.left) this.direction = 1
       else if (this.body.blocked.right) this.direction = -1
-      this.body.setVelocityX(this.direction * SHELL_SPEED)
+      this.body.setVelocityX(this.direction * this.shellSpeed)
     }
     // SHELL_IDLE: sits still, no movement to apply.
     this._updateFace()
@@ -103,6 +105,6 @@ export class ShellBuddy extends Enemy {
     this.state = STATE.SHELL_MOVING
     this.kickedBy = player // credits any later chain kill to whoever kicked it
     this.direction = player.rect.x < this.rect.x ? 1 : -1
-    this.body.setVelocityX(this.direction * SHELL_SPEED)
+    this.body.setVelocityX(this.direction * this.shellSpeed)
   }
 }

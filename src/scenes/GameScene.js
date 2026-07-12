@@ -729,7 +729,12 @@ export class GameScene extends Phaser.Scene {
     // constructor (same "group defaults override on add" gotcha as moving
     // platforms/items — see PLAN.md §7 item 9). Re-assert it after adding.
     fireball.body.setVelocityX(player.facing * FIREBALL_SPEED)
-    this.physics.add.collider(fireball.rect, this.groundGroup)
+    // Overlap (not collider): the shot dies the moment it touches ANY solid,
+    // including when it spawns already embedded in one — firing point-blank
+    // at a pipe used to bury the fireball deeper than Arcade's max-overlap
+    // separation limit, which skips separation entirely and let the shot
+    // sail straight through the pipe and hit things on the far side.
+    this.physics.add.overlap(fireball.rect, this.groundGroup, () => fireball.destroy())
   }
 
   _wirePlayerCollisions(player) {

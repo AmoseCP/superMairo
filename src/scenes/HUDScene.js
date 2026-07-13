@@ -37,7 +37,9 @@ export class HUDScene extends Phaser.Scene {
     if (!gs?.coop) return
 
     const coop = gs.coop
-    const hearts = '❤'.repeat(Math.max(0, coop.sharedLives))
+    // '❤️'（U+2764 + U+FE0F 表情变体符）强制彩色 emoji 呈现——裸 '❤' 是文本
+    // 字形，会被 HUD 的深色文字颜色染成黑心。
+    const hearts = '❤️'.repeat(Math.max(0, coop.sharedLives))
     const p2Status = coop.p2Joined ? 'P2 已加入 🐱' : '按 IJKL/U 或手柄1 加入 P2'
     const elapsedSec = Math.floor((time - gs.startTime) / 1000)
     const muteIcon = gs.audioManager?.muted ? '🔇（M 开启声音）' : '🔊（M 静音）'

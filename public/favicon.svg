@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- 跳跳兔（P1）网站图标 — 与游戏内程序化形象同款配色：
+       身体 #ff8fc7 / 内耳·腮红 #ffb6da·#ff9eb5 / 瞳孔 #2d2d2d -->
+  <ellipse cx="22" cy="15" rx="7" ry="15" fill="#ff8fc7"/>
+  <ellipse cx="42" cy="15" rx="7" ry="15" fill="#ff8fc7"/>
+  <ellipse cx="22" cy="16" rx="3.4" ry="10" fill="#ffb6da"/>
+  <ellipse cx="42" cy="16" rx="3.4" ry="10" fill="#ffb6da"/>
+  <rect x="9" y="21" width="46" height="40" rx="13" fill="#ff8fc7"/>
+  <circle cx="24" cy="38" r="5.6" fill="#ffffff"/>
+  <circle cx="40" cy="38" r="5.6" fill="#ffffff"/>
+  <circle cx="25.4" cy="38.6" r="2.7" fill="#2d2d2d"/>
+  <circle cx="41.4" cy="38.6" r="2.7" fill="#2d2d2d"/>
+  <circle cx="16.5" cy="47.5" r="4.2" fill="#ff9eb5" opacity="0.85"/>
+  <circle cx="47.5" cy="47.5" r="4.2" fill="#ff9eb5" opacity="0.85"/>
+  <path d="M29 46.5 q3 3.2 6 0" stroke="#c2578f" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+</svg>

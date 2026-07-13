@@ -1,4 +1,5 @@
 import { TILE_SIZE, WORLD_SCALE } from '../config/constants.js'
+import { MISC_ART } from '../config/assets.js'
 
 const BELT_TEXTURE_KEY = 'belt_tex'
 const BELT_THICKNESS = 10 * WORLD_SCALE
@@ -19,30 +20,42 @@ export class Conveyor {
     this.dir = dir
     this.speed = speed * WORLD_SCALE
 
-    if (!scene.textures.exists(BELT_TEXTURE_KEY)) {
-      const size = 32
-      const canvas = scene.textures.createCanvas(BELT_TEXTURE_KEY, size, 16)
-      const ctx = canvas.getContext()
-      ctx.fillStyle = BELT_COLOR_A
-      ctx.fillRect(0, 0, size, 16)
-      ctx.strokeStyle = BELT_COLOR_B
-      ctx.lineWidth = 4
-      ctx.beginPath()
-      ctx.moveTo(4, 13)
-      ctx.lineTo(16, 3)
-      ctx.lineTo(28, 13)
-      ctx.stroke()
-      canvas.refresh()
+    // Real belt art (MISC_ART.belt, tiles horizontally like ground_tile)
+    // takes over when present; otherwise generate the chevron placeholder.
+    let texKey = MISC_ART.belt.key
+    if (!scene.textures.exists(texKey)) {
+      texKey = BELT_TEXTURE_KEY
+      if (!scene.textures.exists(BELT_TEXTURE_KEY)) {
+        const size = 32
+        const canvas = scene.textures.createCanvas(BELT_TEXTURE_KEY, size, 16)
+        const ctx = canvas.getContext()
+        ctx.fillStyle = BELT_COLOR_A
+        ctx.fillRect(0, 0, size, 16)
+        ctx.strokeStyle = BELT_COLOR_B
+        ctx.lineWidth = 4
+        ctx.beginPath()
+        ctx.moveTo(4, 13)
+        ctx.lineTo(16, 3)
+        ctx.lineTo(28, 13)
+        ctx.stroke()
+        canvas.refresh()
+      }
     }
     const width = this.right - this.left
+    this.textureKey = texKey // which art was picked (TileSprite wraps it in an internal UUID key)
     this.strip = scene.add
-      .tileSprite((this.left + this.right) / 2, this.top + BELT_THICKNESS / 2, width, BELT_THICKNESS, BELT_TEXTURE_KEY)
+      .tileSprite((this.left + this.right) / 2, this.top + BELT_THICKNESS / 2, width, BELT_THICKNESS, texKey)
       .setDepth(1)
+    // Fit the source texture's height to the strip so any art height works;
+    // scrolling is then done in texture-space pixels.
+    const srcHeight = scene.textures.get(texKey).getSourceImage().height
+    this._tileScale = BELT_THICKNESS / srcHeight
+    this.strip.setTileScale(this._tileScale)
   }
 
-  /** Scroll the chevron texture with the belt's motion (paused = frozen). */
+  /** Scroll the belt texture with the belt's motion (paused = frozen). */
   update(delta, paused) {
     if (paused) return
-    this.strip.tilePositionX += (this.dir * this.speed * delta) / 1000 / (BELT_THICKNESS / 16)
+    this.strip.tilePositionX += (this.dir * this.speed * delta) / 1000 / this._tileScale
   }
 }

@@ -1,4 +1,6 @@
 import { TILE_SIZE, WORLD_SCALE } from '../config/constants.js'
+import { MISC_ART } from '../config/assets.js'
+import { tryArtSprite } from '../utils/artSwap.js'
 
 const COLUMN_HEIGHT_TILES = 3
 const COLUMN_WIDTH = 20 * WORLD_SCALE
@@ -31,8 +33,21 @@ export class FlameJet {
     this.glow = scene.add.circle(this.x, this.groundY - NOZZLE_HEIGHT, 8 * WORLD_SCALE, GLOW_COLOR, 0.8).setVisible(false)
     const columnHeight = COLUMN_HEIGHT_TILES * TILE_SIZE
     this.columnY = this.groundY - columnHeight / 2
+    // Real flame-column art replaces the procedural rects when present
+    // (see assets.js MISC_ART.flameJet / ASSET_SPEC.md).
+    this.artSprite = tryArtSprite(scene, this.x, this.columnY, MISC_ART.flameJet, COLUMN_WIDTH, columnHeight)
+    this.artSprite?.setVisible(false)
     this.flame = scene.add.rectangle(this.x, this.columnY, COLUMN_WIDTH, columnHeight, FLAME_COLOR, 0.9).setVisible(false)
     this.core = scene.add.rectangle(this.x, this.columnY, COLUMN_WIDTH * 0.45, columnHeight * 0.92, CORE_COLOR, 0.95).setVisible(false)
+  }
+
+  _setColumnVisible(visible) {
+    if (this.artSprite) {
+      this.artSprite.setVisible(visible)
+    } else {
+      this.flame.setVisible(visible)
+      this.core.setVisible(visible)
+    }
   }
 
   get isDangerous() {
@@ -53,7 +68,7 @@ export class FlameJet {
     if (time < this.stateUntil) {
       if (this.state === 'burn') {
         const flicker = 0.85 + Math.sin(time / 40) * 0.1
-        this.flame.setAlpha(flicker)
+        ;(this.artSprite ?? this.flame).setAlpha(flicker)
       } else if (this.state === 'warmup') {
         this.glow.setAlpha(0.4 + Math.sin(time / 60) * 0.4)
       }
@@ -67,13 +82,11 @@ export class FlameJet {
       this.state = 'burn'
       this.stateUntil = time + this.burnMs
       this.glow.setVisible(false)
-      this.flame.setVisible(true)
-      this.core.setVisible(true)
+      this._setColumnVisible(true)
     } else {
       this.state = 'idle'
       this.stateUntil = time + Math.max(400, this.periodMs - WARMUP_MS - this.burnMs)
-      this.flame.setVisible(false)
-      this.core.setVisible(false)
+      this._setColumnVisible(false)
     }
   }
 }

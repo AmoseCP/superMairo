@@ -52,13 +52,18 @@ export class VictoryScene extends Phaser.Scene {
       })
       .setOrigin(0.5)
 
-    this.input.keyboard.once('keydown-SPACE', () => this._restart())
     this.input.once('pointerdown', () => this._restart())
+    // Space/A use a release-then-press poll — a key still held from the
+    // previous scene (or its auto-repeat events) must never skip this screen.
+    this.spaceKey = this.input.keyboard.addKey('SPACE')
+    this._confirmArmed = false
   }
 
   update() {
     const pad = this.input.gamepad?.getPad(0)
-    if (pad?.A && !this._restarting) this._restart()
+    const confirmDown = this.spaceKey.isDown || !!pad?.A
+    if (!confirmDown) this._confirmArmed = true
+    if (this._confirmArmed && confirmDown && !this._restarting) this._restart()
   }
 
   _restart() {

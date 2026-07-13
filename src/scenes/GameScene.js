@@ -137,7 +137,12 @@ const BRICK_CHIP_OFFSETS = [
 // outruns its rider and drops them; the embed side just needs to catch
 // collision-resolution slop.
 const PLATFORM_CARRY_GAP_TOLERANCE_PX = 12 * WORLD_SCALE
-const PLATFORM_CARRY_EMBED_TOLERANCE_PX = 6 * WORLD_SCALE
+// Embed side must cover ~2 frames of terminal fall on a 60Hz display
+// (underwater falls hit ~26px/frame): side-entry onto a fast horizontal
+// platform never gets an Arcade one-way top separation, so the sticky
+// glue is the only thing that can catch it. A shallow snap-up is also the
+// designed behavior for one-way platforms (jump up through → pop on top).
+const PLATFORM_CARRY_EMBED_TOLERANCE_PX = 16 * WORLD_SCALE
 const PLATFORM_CARRY_X_MARGIN_PX = 4 * WORLD_SCALE
 
 // --- P1/P2 stacking tolerance (see onP2Spawned's collider processCallback) ---
@@ -1398,9 +1403,13 @@ export class GameScene extends Phaser.Scene {
         // who is jumping up past the platform.
         if (!wasRiding && rider.body.velocity.y < -1) continue
         attached = platform
+        // Mutate the GameObject ONLY — same lesson as the conveyor: pairing
+        // a manual move with body.updateFromGameObject() makes Arcade's
+        // postUpdate re-apply the shift AND swallow the rider's own velocity
+        // movement (walking froze, y flickered ±2px every frame on 1-3's
+        // lifts). GO-only moves are propagated to the body once, cleanly.
         rider.rect.x += platform.deltaX
         rider.rect.y = platTop - rider.rect.height / 2
-        rider.body.updateFromGameObject()
         // Position is authoritative while riding; residual velocity (e.g.
         // the ascent push) would just re-launch the rider at reversals.
         rider.body.setVelocityY(0)

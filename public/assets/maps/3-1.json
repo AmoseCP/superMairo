@@ -1,0 +1,508 @@
+{
+  "id": "3-1",
+  "name": "弹簧牧场",
+  "widthTiles": 240,
+  "heightTiles": 14,
+  "spawnTile": {
+    "x": 1,
+    "y": 8
+  },
+  "groundSpans": [
+    {
+      "fromTile": 0,
+      "toTile": 98,
+      "tileY": 11
+    },
+    {
+      "fromTile": 98,
+      "toTile": 103,
+      "tileY": 11
+    },
+    {
+      "fromTile": 108,
+      "toTile": 113,
+      "tileY": 11
+    },
+    {
+      "fromTile": 118,
+      "toTile": 123,
+      "tileY": 11
+    },
+    {
+      "fromTile": 128,
+      "toTile": 197,
+      "tileY": 11
+    },
+    {
+      "fromTile": 204,
+      "toTile": 240,
+      "tileY": 11
+    }
+  ],
+  "platforms": [
+    {
+      "fromTile": 29,
+      "toTile": 42,
+      "tileY": 7
+    },
+    {
+      "fromTile": 59,
+      "toTile": 72,
+      "tileY": 6
+    },
+    {
+      "fromTile": 65,
+      "toTile": 76,
+      "tileY": 2
+    },
+    {
+      "fromTile": 133,
+      "toTile": 146,
+      "tileY": 3
+    },
+    {
+      "fromTile": 153,
+      "toTile": 163,
+      "tileY": 4
+    }
+  ],
+  "springs": [
+    {
+      "x": 18,
+      "groundTileY": 11,
+      "size": "small"
+    },
+    {
+      "x": 26,
+      "groundTileY": 11,
+      "size": "small"
+    },
+    {
+      "x": 56,
+      "groundTileY": 11,
+      "size": "small"
+    },
+    {
+      "x": 63,
+      "groundTileY": 6,
+      "size": "small"
+    },
+    {
+      "x": 78,
+      "groundTileY": 11,
+      "size": "big"
+    },
+    {
+      "x": 102,
+      "groundTileY": 11,
+      "size": "small"
+    },
+    {
+      "x": 112,
+      "groundTileY": 11,
+      "size": "small"
+    },
+    {
+      "x": 122,
+      "groundTileY": 11,
+      "size": "small"
+    },
+    {
+      "x": 130,
+      "groundTileY": 11,
+      "size": "big"
+    },
+    {
+      "x": 150,
+      "groundTileY": 11,
+      "size": "big"
+    },
+    {
+      "x": 191,
+      "groundTileY": 11,
+      "size": "small"
+    },
+    {
+      "x": 214,
+      "groundTileY": 11,
+      "size": "small"
+    },
+    {
+      "x": 226,
+      "groundTileY": 11,
+      "size": "small"
+    }
+  ],
+  "enemies": [
+    {
+      "type": "hopper",
+      "x": 36,
+      "y": 10
+    },
+    {
+      "type": "hopper",
+      "x": 46,
+      "y": 10
+    },
+    {
+      "type": "mochi",
+      "x": 86,
+      "y": 10
+    },
+    {
+      "type": "hopper",
+      "x": 82,
+      "y": 10
+    },
+    {
+      "type": "hopper",
+      "x": 92,
+      "y": 10
+    },
+    {
+      "type": "mochi",
+      "x": 96,
+      "y": 10
+    },
+    {
+      "type": "mochi",
+      "x": 124,
+      "y": 10
+    },
+    {
+      "type": "gearmochi",
+      "x": 129,
+      "y": 10
+    },
+    {
+      "type": "hopper",
+      "x": 136,
+      "y": 10
+    },
+    {
+      "type": "gearmochi",
+      "x": 146,
+      "y": 10
+    },
+    {
+      "type": "hopper",
+      "x": 152,
+      "y": 10
+    },
+    {
+      "type": "mochi",
+      "x": 160,
+      "y": 10
+    },
+    {
+      "type": "hopper",
+      "x": 168,
+      "y": 10
+    },
+    {
+      "type": "hopper",
+      "x": 176,
+      "y": 10
+    }
+  ],
+  "waterZones": [
+    {
+      "fromTile": 204,
+      "toTile": 240
+    }
+  ],
+  "pipes": [
+    {
+      "id": "trap3-1a",
+      "x": 164,
+      "groundTileY": 11,
+      "hasTrap": true
+    },
+    {
+      "id": "trap3-1b",
+      "x": 172,
+      "groundTileY": 11,
+      "hasTrap": true,
+      "trapPhaseOffsetMs": 1300
+    },
+    {
+      "id": "trap3-1c",
+      "x": 180,
+      "groundTileY": 11,
+      "hasTrap": true,
+      "trapPhaseOffsetMs": 2600
+    },
+    {
+      "id": "entry3-1",
+      "x": 188,
+      "groundTileY": 11,
+      "enterable": true,
+      "warpToId": "uw3-1"
+    },
+    {
+      "id": "uw3-1",
+      "x": 210,
+      "groundTileY": 11,
+      "enterable": true,
+      "warpToId": "entry3-1"
+    }
+  ],
+  "coins": [
+    {
+      "x": 10,
+      "y": 6
+    },
+    {
+      "x": 11,
+      "y": 6
+    },
+    {
+      "x": 17,
+      "y": 6
+    },
+    {
+      "x": 18,
+      "y": 6
+    },
+    {
+      "x": 19,
+      "y": 6
+    },
+    {
+      "x": 25,
+      "y": 6
+    },
+    {
+      "x": 27,
+      "y": 6
+    },
+    {
+      "x": 29,
+      "y": 6
+    },
+    {
+      "x": 80,
+      "y": 3
+    },
+    {
+      "x": 82,
+      "y": 3
+    },
+    {
+      "x": 84,
+      "y": 3
+    },
+    {
+      "x": 105,
+      "y": 9
+    },
+    {
+      "x": 106,
+      "y": 9
+    },
+    {
+      "x": 115,
+      "y": 9
+    },
+    {
+      "x": 116,
+      "y": 9
+    },
+    {
+      "x": 166,
+      "y": 9
+    },
+    {
+      "x": 174,
+      "y": 9
+    },
+    {
+      "x": 183,
+      "y": 9
+    },
+    {
+      "x": 184,
+      "y": 9
+    },
+    {
+      "x": 185,
+      "y": 9
+    },
+    {
+      "x": 193,
+      "y": 6
+    },
+    {
+      "x": 206,
+      "y": 9
+    },
+    {
+      "x": 207,
+      "y": 9
+    },
+    {
+      "x": 213,
+      "y": 6
+    },
+    {
+      "x": 215,
+      "y": 6
+    },
+    {
+      "x": 220,
+      "y": 9
+    },
+    {
+      "x": 222,
+      "y": 9
+    },
+    {
+      "x": 224,
+      "y": 9
+    },
+    {
+      "x": 225,
+      "y": 6
+    },
+    {
+      "x": 227,
+      "y": 6
+    },
+    {
+      "x": 231,
+      "y": 9
+    },
+    {
+      "x": 233,
+      "y": 9
+    },
+    {
+      "x": 235,
+      "y": 9
+    },
+    {
+      "x": 67,
+      "y": 1
+    },
+    {
+      "x": 69,
+      "y": 1
+    },
+    {
+      "x": 71,
+      "y": 1
+    },
+    {
+      "x": 73,
+      "y": 1
+    },
+    {
+      "x": 75,
+      "y": 1
+    },
+    {
+      "x": 135,
+      "y": 2
+    },
+    {
+      "x": 137,
+      "y": 2
+    },
+    {
+      "x": 139,
+      "y": 2
+    },
+    {
+      "x": 141,
+      "y": 2
+    },
+    {
+      "x": 143,
+      "y": 2
+    }
+  ],
+  "questionBlocks": [
+    {
+      "x": 8,
+      "y": 8,
+      "item": "mushroom"
+    },
+    {
+      "x": 71,
+      "y": 8,
+      "item": "fireflower"
+    },
+    {
+      "x": 165,
+      "y": 8,
+      "item": "star"
+    }
+  ],
+  "bricks": [
+    {
+      "x": 3,
+      "y": 8
+    },
+    {
+      "x": 4,
+      "y": 8,
+      "coin": true
+    },
+    {
+      "x": 5,
+      "y": 8
+    },
+    {
+      "x": 148,
+      "y": 8
+    },
+    {
+      "x": 149,
+      "y": 8,
+      "coin": true
+    },
+    {
+      "x": 159,
+      "y": 8
+    },
+    {
+      "x": 161,
+      "y": 8
+    },
+    {
+      "x": 162,
+      "y": 8
+    }
+  ],
+  "movingPlatforms": [],
+  "checkpoints": [
+    {
+      "x": 70,
+      "y": 9
+    },
+    {
+      "x": 140,
+      "y": 9
+    }
+  ],
+  "dualSwitchChests": [
+    {
+      "plateA": {
+        "x": 155,
+        "y": 3
+      },
+      "plateB": {
+        "x": 160,
+        "y": 3
+      },
+      "chestX": 157,
+      "chestY": 1,
+      "reward": "star"
+    }
+  ],
+  "timedDoors": [],
+  "flagpoleTile": {
+    "x": 194,
+    "y": 11
+  }
+}

@@ -35,8 +35,10 @@ export class CoopManager {
       onGameOver,
       onP2Spawned,
       onFireRequested,
+      onRespawn,
       checkpointManager,
       touchState,
+      autoScroll,
     },
   ) {
     this.scene = scene
@@ -48,7 +50,15 @@ export class CoopManager {
     this.onGameOver = onGameOver
     this.onP2Spawned = onP2Spawned
     this.onFireRequested = onFireRequested
+    this.onRespawn = onRespawn
     this.checkpointManager = checkpointManager
+    // 3-3 强制卷轴（LEVELS3.md）：{speedPx（已含 WORLD_SCALE）, startX, endX}
+    // 均已是真实像素单位（GameScene 转换过）。_scrollX===null 表示还没进入
+    // 卷轴区；一旦任意存活玩家越过 startX 就锁定并开始匀速推进，直到越过
+    // endX 后 _scrollDone=true 永久交还正常跟随镜头。
+    this.autoScroll = autoScroll ?? null
+    this._scrollX = null
+    this._scrollDone = false
 
     this.sharedLives = SHARED_LIVES_START
     this.gameOver = false
@@ -108,7 +118,7 @@ export class CoopManager {
       if (this.p2Joined && !this.p2Bubble) this.checkpointManager.checkReached(this.p2.rect.x)
     }
 
-    this._updateCamera()
+    this._updateCamera(time, delta)
   }
 
   _spawnP2() {
@@ -179,6 +189,9 @@ export class CoopManager {
     const bubble = who === 'p1' ? this.p1Bubble : this.p2Bubble
     if (!bubble) return
     bubble.update(time)
+    // 卷轴关：泡泡跟着镜头一起走，不会被卷轴落在视野外救不到（LEVELS3.md
+    // "一人阵亡的泡泡飘在镜头中央随镜头走，复活门槛不变"）。
+    if (this.autoScroll && this._scrollX !== null && !this._scrollDone) bubble.circle.x = this._scrollX
 
     const rescuer = who === 'p1' ? this.p2 : this.p1
     const rescuerBubbled = who === 'p1' ? this.p2Bubble : this.p1Bubble
@@ -222,6 +235,10 @@ export class CoopManager {
       this._gameOver()
       return
     }
+    // 卷轴区死亡回卷轴起点——respawn 点本来就是 startTile 前的安全检查点，
+    // 这里只需要把镜头的卷轴状态也一并复位，否则玩家复活在起点但镜头还
+    // 停在死亡时的位置，会立刻被判"左缘出屏"再死一次。
+    if (this.autoScroll && this._scrollX !== null && !this._scrollDone) this._scrollX = null
     const player = who === 'p1' ? this.p1 : this.p2
     const offsetX = who === 'p1' ? 0 : -P2_SPAWN_OFFSET_X
     const respawn = this.checkpointManager?.getRespawnPoint(this.spawnX, this.spawnY) ?? {
@@ -233,6 +250,7 @@ export class CoopManager {
     player.setActive(true)
     // AFTER resetForm (which zeroes invincibility) — see grantSpawnProtection.
     player.grantSpawnProtection(HIT_INVINCIBLE_MS)
+    this.onRespawn?.(who, respawn)
   }
 
   _gameOver() {
@@ -242,7 +260,7 @@ export class CoopManager {
     this.onGameOver?.()
   }
 
-  _updateCamera() {
+  _updateCamera(time, delta) {
     const activePlayers = [
       !this.p1Bubble ? this.p1 : null,
       this.p2Joined && !this.p2Bubble ? this.p2 : null,
@@ -250,8 +268,23 @@ export class CoopManager {
 
     if (activePlayers.length === 0) return
 
-    const midX = activePlayers.reduce((sum, p) => sum + p.rect.x, 0) / activePlayers.length
+    let midX = activePlayers.reduce((sum, p) => sum + p.rect.x, 0) / activePlayers.length
     const midY = activePlayers.reduce((sum, p) => sum + p.rect.y, 0) / activePlayers.length
+
+    // 3-3 强制卷轴：一旦锁定就完全无视玩家位置，镜头目标匀速自己往右走
+    // ("镜头不再取两人中点，直接匀速走")，直到越过 endX 才把 midX 交还
+    // 给上面算好的玩家中点，接管过程本身靠 lerp-follow 的平滑属性自然
+    // 衔接，不会有硬跳变。
+    if (this.autoScroll && !this._scrollDone) {
+      if (this._scrollX === null && activePlayers.some((p) => p.rect.x >= this.autoScroll.startX)) {
+        this._scrollX = this.autoScroll.startX
+      }
+      if (this._scrollX !== null) {
+        this._scrollX = Math.min(this._scrollX + this.autoScroll.speedPx * (delta / 1000), this.autoScroll.endX)
+        midX = this._scrollX
+        if (this._scrollX >= this.autoScroll.endX) this._scrollDone = true
+      }
+    }
 
     // When the level's total height fits within the current viewport, pin
     // the camera so the level's bottom (the ground) sits at the bottom of
@@ -263,13 +296,22 @@ export class CoopManager {
     const targetY = this.worldHeight <= viewportHeight ? this.worldHeight - viewportHeight / 2 : midY
     this.cameraTarget.setPosition(midX, targetY)
 
+    const view = this.scene.cameras.main.worldView
+    const scrollLive = this.autoScroll && this._scrollX !== null && !this._scrollDone
+    if (scrollLive) {
+      // 左缘出屏 = handlePlayerDown（走掉命/泡泡全套规则）——卷轴关死亡
+      // 统一回卷轴起点，不是单独的一套判定。
+      for (const p of activePlayers) {
+        if (p.rect.x < view.x) this.handlePlayerDown(p === this.p1 ? 'p1' : 'p2', time)
+      }
+    }
+
     if (!this.p2Joined) {
       this._joinArrow.setVisible(false)
       return
     }
 
-    const view = this.scene.cameras.main.worldView
-    if (activePlayers.length === 2) {
+    if (activePlayers.length === 2 && !scrollLive) {
       for (const p of activePlayers) {
         if (p.rect.x < view.x + CAMERA_EDGE_MARGIN && p.body.velocity.x < 0) {
           p.body.setVelocityX(0)

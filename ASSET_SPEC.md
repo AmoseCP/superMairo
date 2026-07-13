@@ -42,6 +42,9 @@
 | `enemy_gearmochi.png` | `public/assets/sprites/` | **90 × 76** | 必画 | 发条齿轮怪（2-3/2-5），团子怪的工厂变体，铁灰配色、带齿轮元素 |
 | `enemy_sovereign_blue.png` | `public/assets/sprites/` | **158 × 145** | 可选 | 2-5 双子 Boss·蓝王（砸地留冰面）。不画则自动用 `enemy_boss.png` 染成蓝色 |
 | `enemy_sovereign_red.png` | `public/assets/sprites/` | **158 × 145** | 可选 | 2-5 双子 Boss·红王（砸地喷火）。不画则自动用 `enemy_boss.png` 染成红色 |
+| `enemy_hopper.png` | `public/assets/sprites/` | **84 × 72** | 必画 | 跳跳怪（3-1），静止蹲伏 + 蓄力跳跃，画一个"预备起跳"的蹲姿造型即可，蓄力时的白闪/腾空姿态是程序处理 |
+| `enemy_shyghost.png` | `public/assets/sprites/` | **96 × 96** | 必画 | 害羞幽灵（3-2），白色圆团+黑眼+腮红，建议画"睁眼看着前方"的常态；被注视时捂脸/半透明变化是程序自动处理，不需要另画捂脸帧 |
+| `enemy_turret.png` | `public/assets/sprites/` | **120 × 132** | 可选 | 峡谷炮塔（3-3），固定不动的石堡小塔，只需要画一个"待机"造型；开火没有专属动画（炮弹从塔顶飞出即代表开火），受击闪红是程序叠加的滤镜 |
 
 - 同样默认朝向面朝右，自动镜像处理向左走的情况。
 - Boss 被踩中/攻击预警时的颜色闪烁是程序叠加的滤镜特效，不需要额外画变色图。
@@ -89,6 +92,11 @@
 | `belt.png` | `public/assets/sprites/` | **96 × 30**（**必须左右无缝平铺**，同 `ground_tile` 的要求） | 传送带表面（2-3/2-5），会沿带面横向重复平铺并随传送方向滚动，画箭头/纹路时注意左右边缘衔接 |
 | `crumble_platform.png` | `public/assets/sprites/` | **288 × 96**（会拉伸到 2~3 格宽的实际尺寸） | 碎裂平台完好状态（2-4/2-5），建议画成带细小裂纹的悬浮石板，和普通平台有可辨识的区别 |
 | `crumble_platform_cracked.png` | `public/assets/sprites/` | **288 × 96** | 可选。踩上后 0.4 秒摇晃期显示的"裂纹加深"状态，不画则摇晃期沿用完好图（仍有闪烁提示） |
+| `spring_small.png` | `public/assets/sprites/` | **168 × 36** | 小弹簧（3-1，弹起 5 格）。矮而扁的踏板造型——身高不能画得太高（参考身高比例：远比角色矮），否则弹跳判定容易读成"撞墙"而不是"踩上去弹起" |
+| `spring_big.png` | `public/assets/sprites/` | **168 × 36** | 大弹簧（3-1，弹起 8 格），同小弹簧尺寸，建议用更醒目的配色/花纹区分"这个弹得更高" |
+| `switch_block_red.png` | `public/assets/sprites/` | **96 × 96**（会拉伸/压缩到具体这一段方块的实际宽度，同 `platform.png` 的用法） | 红蓝切换方块·红色态（3-2）。非激活色时程序会整体调低透明度（轮廓仍可见），不需要另画"虚化"版本 |
+| `switch_block_blue.png` | `public/assets/sprites/` | **96 × 96**（同上，会拉伸） | 红蓝切换方块·蓝色态（3-2） |
+| `turret_shot.png` | `public/assets/sprites/` | **72 × 72** | 炮塔炮弹（3-3），正方形图，圆形图案居中，落地即碎不需要碎裂帧 |
 
 ---
 
@@ -116,6 +124,9 @@
 | `bg-2-3.png` | `public/assets/backgrounds/` | **23424 × 1152** | 熔岩工厂 |
 | `bg-2-4.png` | `public/assets/backgrounds/` | **6144 × 4224**（纵版塔楼：窄而高，和其它关方向相反） | 狂风高塔 |
 | `bg-2-5.png` | `public/assets/backgrounds/` | **23616 × 1344** | 双子魔堡 |
+| `bg-3-1.png` | `public/assets/backgrounds/` | **23040 × 1344** | 弹簧牧场 |
+| `bg-3-2.png` | `public/assets/backgrounds/` | **23040 × 1344** | 红蓝回廊 |
+| `bg-3-3.png` | `public/assets/backgrounds/` | **28416 × 1152** | 疾风飞车 |
 
 - 这几张图非常宽（横向卷轴关卡的全长），建议先画一个较窄的"可重复/可延展"的构图打底，再用软件里的画布拉伸/平铺工具铺到目标尺寸，不需要真的从头到尾手绘一张上万像素宽的图。
 - 只画其中几关也可以，没画背景大图的关卡会继续显示现在的天空+云朵效果，互不影响。

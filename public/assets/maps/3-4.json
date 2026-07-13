@@ -1,0 +1,298 @@
+{
+  "id": "3-4",
+  "name": "熔火攀登",
+  "widthTiles": 64,
+  "heightTiles": 50,
+  "vertical": true,
+  "spawnTile": {
+    "x": 3,
+    "y": 41
+  },
+  "risingLava": {
+    "startTileY": 48,
+    "speedPx": 12,
+    "pauseAtTileY": [
+      30,
+      16
+    ],
+    "pauseMs": 6000
+  },
+  "groundSpans": [
+    {
+      "fromTile": 0,
+      "toTile": 64,
+      "tileY": 44
+    }
+  ],
+  "platforms": [
+    {
+      "fromTile": 4,
+      "toTile": 10,
+      "tileY": 41
+    },
+    {
+      "fromTile": 11,
+      "toTile": 17,
+      "tileY": 39
+    },
+    {
+      "fromTile": 18,
+      "toTile": 24,
+      "tileY": 37
+    },
+    {
+      "fromTile": 25,
+      "toTile": 31,
+      "tileY": 35
+    },
+    {
+      "fromTile": 32,
+      "toTile": 38,
+      "tileY": 33
+    },
+    {
+      "fromTile": 39,
+      "toTile": 45,
+      "tileY": 31
+    },
+    {
+      "fromTile": 46,
+      "toTile": 52,
+      "tileY": 29
+    },
+    {
+      "fromTile": 0,
+      "toTile": 64,
+      "tileY": 30
+    },
+    {
+      "fromTile": 40,
+      "toTile": 46,
+      "tileY": 27
+    },
+    {
+      "fromTile": 51,
+      "toTile": 52,
+      "tileY": 27
+    },
+    {
+      "fromTile": 57,
+      "toTile": 63,
+      "tileY": 24
+    },
+    {
+      "fromTile": 47,
+      "toTile": 53,
+      "tileY": 22
+    },
+    {
+      "fromTile": 40,
+      "toTile": 46,
+      "tileY": 20
+    },
+    {
+      "fromTile": 33,
+      "toTile": 39,
+      "tileY": 18
+    },
+    {
+      "fromTile": 26,
+      "toTile": 32,
+      "tileY": 16
+    },
+    {
+      "fromTile": 19,
+      "toTile": 25,
+      "tileY": 14
+    },
+    {
+      "fromTile": 0,
+      "toTile": 64,
+      "tileY": 16
+    },
+    {
+      "fromTile": 6,
+      "toTile": 16,
+      "tileY": 13
+    },
+    {
+      "fromTile": 23,
+      "toTile": 33,
+      "tileY": 8
+    },
+    {
+      "fromTile": 32,
+      "toTile": 50,
+      "tileY": 3
+    }
+  ],
+  "switchBlocks": [
+    {
+      "x": 46,
+      "y": 27,
+      "widthTiles": 5,
+      "color": "red"
+    },
+    {
+      "x": 52,
+      "y": 27,
+      "widthTiles": 5,
+      "color": "blue"
+    }
+  ],
+  "colorSwitches": [
+    {
+      "x": 51,
+      "y": 27
+    }
+  ],
+  "springs": [
+    {
+      "x": 24,
+      "groundTileY": 8,
+      "size": "big"
+    }
+  ],
+  "crumblePlatforms": [
+    {
+      "x": 16,
+      "y": 10,
+      "widthTiles": 6
+    }
+  ],
+  "enemies": [
+    {
+      "type": "bat",
+      "x": 49,
+      "y": 25
+    },
+    {
+      "type": "bat",
+      "x": 10,
+      "y": 12
+    },
+    {
+      "type": "bat",
+      "x": 22,
+      "y": 9
+    },
+    {
+      "type": "bat",
+      "x": 40,
+      "y": 2
+    }
+  ],
+  "questionBlocks": [
+    {
+      "x": 5,
+      "y": 38,
+      "item": "mushroom"
+    },
+    {
+      "x": 5,
+      "y": 13,
+      "item": "fireflower"
+    }
+  ],
+  "bricks": [],
+  "checkpoints": [
+    {
+      "x": 52,
+      "y": 28
+    },
+    {
+      "x": 55,
+      "y": 14
+    }
+  ],
+  "flagpoleTile": {
+    "x": 44,
+    "y": 3
+  },
+  "coins": [
+    {
+      "x": 8,
+      "y": 39
+    },
+    {
+      "x": 15,
+      "y": 37
+    },
+    {
+      "x": 22,
+      "y": 35
+    },
+    {
+      "x": 29,
+      "y": 33
+    },
+    {
+      "x": 36,
+      "y": 31
+    },
+    {
+      "x": 43,
+      "y": 29
+    },
+    {
+      "x": 42,
+      "y": 22
+    },
+    {
+      "x": 44,
+      "y": 22
+    },
+    {
+      "x": 60,
+      "y": 22
+    },
+    {
+      "x": 62,
+      "y": 22
+    },
+    {
+      "x": 61,
+      "y": 20
+    },
+    {
+      "x": 54,
+      "y": 18
+    },
+    {
+      "x": 47,
+      "y": 16
+    },
+    {
+      "x": 8,
+      "y": 11
+    },
+    {
+      "x": 10,
+      "y": 11
+    },
+    {
+      "x": 22,
+      "y": 11
+    },
+    {
+      "x": 24,
+      "y": 11
+    },
+    {
+      "x": 34,
+      "y": 1
+    },
+    {
+      "x": 36,
+      "y": 1
+    },
+    {
+      "x": 40,
+      "y": 1
+    },
+    {
+      "x": 44,
+      "y": 1
+    }
+  ]
+}

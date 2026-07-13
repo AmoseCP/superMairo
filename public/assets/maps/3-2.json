@@ -1,0 +1,637 @@
+{
+  "id": "3-2",
+  "name": "红蓝回廊",
+  "widthTiles": 240,
+  "heightTiles": 14,
+  "spawnTile": {
+    "x": 1,
+    "y": 8
+  },
+  "groundSpans": [
+    {
+      "fromTile": 0,
+      "toTile": 36,
+      "tileY": 11
+    },
+    {
+      "fromTile": 36,
+      "toTile": 54,
+      "tileY": 13
+    },
+    {
+      "fromTile": 54,
+      "toTile": 98,
+      "tileY": 11
+    },
+    {
+      "fromTile": 116,
+      "toTile": 198,
+      "tileY": 11
+    },
+    {
+      "fromTile": 204,
+      "toTile": 240,
+      "tileY": 11
+    }
+  ],
+  "platforms": [
+    {
+      "fromTile": 41,
+      "toTile": 42,
+      "tileY": 11
+    },
+    {
+      "fromTile": 74,
+      "toTile": 76,
+      "tileY": 9
+    },
+    {
+      "fromTile": 81,
+      "toTile": 83,
+      "tileY": 7
+    },
+    {
+      "fromTile": 88,
+      "toTile": 94,
+      "tileY": 5
+    },
+    {
+      "fromTile": 104,
+      "toTile": 105,
+      "tileY": 11
+    },
+    {
+      "fromTile": 137,
+      "toTile": 139,
+      "tileY": 9
+    },
+    {
+      "fromTile": 140,
+      "toTile": 142,
+      "tileY": 7
+    },
+    {
+      "fromTile": 148,
+      "toTile": 149,
+      "tileY": 7
+    },
+    {
+      "fromTile": 158,
+      "toTile": 162,
+      "tileY": 6
+    },
+    {
+      "fromTile": 216,
+      "toTile": 217,
+      "tileY": 8
+    }
+  ],
+  "switchBlocks": [
+    {
+      "x": 14,
+      "y": 8,
+      "widthTiles": 3,
+      "color": "red"
+    },
+    {
+      "x": 20,
+      "y": 8,
+      "widthTiles": 3,
+      "color": "blue"
+    },
+    {
+      "x": 26,
+      "y": 8,
+      "widthTiles": 3,
+      "color": "red"
+    },
+    {
+      "x": 36,
+      "y": 11,
+      "widthTiles": 5,
+      "color": "red"
+    },
+    {
+      "x": 42,
+      "y": 11,
+      "widthTiles": 6,
+      "color": "blue"
+    },
+    {
+      "x": 70,
+      "y": 9,
+      "widthTiles": 3,
+      "color": "red"
+    },
+    {
+      "x": 77,
+      "y": 7,
+      "widthTiles": 3,
+      "color": "blue"
+    },
+    {
+      "x": 84,
+      "y": 5,
+      "widthTiles": 3,
+      "color": "red"
+    },
+    {
+      "x": 98,
+      "y": 11,
+      "widthTiles": 6,
+      "color": "red"
+    },
+    {
+      "x": 105,
+      "y": 11,
+      "widthTiles": 11,
+      "color": "blue"
+    },
+    {
+      "x": 144,
+      "y": 7,
+      "widthTiles": 3,
+      "color": "red"
+    },
+    {
+      "x": 150,
+      "y": 7,
+      "widthTiles": 4,
+      "color": "blue"
+    },
+    {
+      "x": 212,
+      "y": 8,
+      "widthTiles": 4,
+      "color": "red"
+    },
+    {
+      "x": 217,
+      "y": 8,
+      "widthTiles": 4,
+      "color": "blue"
+    }
+  ],
+  "colorSwitches": [
+    {
+      "x": 16,
+      "y": 11
+    },
+    {
+      "x": 41,
+      "y": 11
+    },
+    {
+      "x": 75,
+      "y": 9
+    },
+    {
+      "x": 82,
+      "y": 7
+    },
+    {
+      "x": 104,
+      "y": 11
+    },
+    {
+      "x": 141,
+      "y": 7
+    },
+    {
+      "x": 148,
+      "y": 7
+    },
+    {
+      "x": 216,
+      "y": 8
+    }
+  ],
+  "enemies": [
+    {
+      "type": "mochi",
+      "x": 30,
+      "y": 10
+    },
+    {
+      "type": "shyghost",
+      "x": 76,
+      "y": 8
+    },
+    {
+      "type": "shyghost",
+      "x": 85,
+      "y": 6
+    },
+    {
+      "type": "mochi",
+      "x": 58,
+      "y": 10
+    },
+    {
+      "type": "shyghost",
+      "x": 120,
+      "y": 9
+    },
+    {
+      "type": "mochi",
+      "x": 122,
+      "y": 10
+    },
+    {
+      "type": "shyghost",
+      "x": 126,
+      "y": 9
+    },
+    {
+      "type": "mochi",
+      "x": 135,
+      "y": 10
+    },
+    {
+      "type": "shyghost",
+      "x": 132,
+      "y": 9
+    },
+    {
+      "type": "shyghost",
+      "x": 148,
+      "y": 8
+    },
+    {
+      "type": "gearmochi",
+      "x": 168,
+      "y": 10
+    },
+    {
+      "type": "gearmochi",
+      "x": 178,
+      "y": 10
+    }
+  ],
+  "waterZones": [
+    {
+      "fromTile": 204,
+      "toTile": 240
+    }
+  ],
+  "pipes": [
+    {
+      "id": "trap3-2a",
+      "x": 166,
+      "groundTileY": 11,
+      "hasTrap": true
+    },
+    {
+      "id": "trap3-2b",
+      "x": 174,
+      "groundTileY": 11,
+      "hasTrap": true,
+      "trapPhaseOffsetMs": 1300
+    },
+    {
+      "id": "trap3-2c",
+      "x": 182,
+      "groundTileY": 11,
+      "hasTrap": true,
+      "trapPhaseOffsetMs": 2600
+    },
+    {
+      "id": "entry3-2",
+      "x": 188,
+      "groundTileY": 11,
+      "enterable": true,
+      "warpToId": "uw3-2"
+    },
+    {
+      "id": "uw3-2",
+      "x": 214,
+      "groundTileY": 11,
+      "enterable": true,
+      "warpToId": "entry3-2"
+    }
+  ],
+  "questionBlocks": [
+    {
+      "x": 6,
+      "y": 8,
+      "item": "mushroom"
+    },
+    {
+      "x": 62,
+      "y": 8,
+      "item": "fireflower"
+    },
+    {
+      "x": 158,
+      "y": 5,
+      "item": "star"
+    }
+  ],
+  "bricks": [
+    {
+      "x": 8,
+      "y": 8
+    },
+    {
+      "x": 9,
+      "y": 8,
+      "coin": true
+    },
+    {
+      "x": 10,
+      "y": 8
+    }
+  ],
+  "checkpoints": [
+    {
+      "x": 62,
+      "y": 9
+    },
+    {
+      "x": 136,
+      "y": 9
+    }
+  ],
+  "flagpoleTile": {
+    "x": 194,
+    "y": 11
+  },
+  "coins": [
+    {
+      "x": 15,
+      "y": 6
+    },
+    {
+      "x": 16,
+      "y": 6
+    },
+    {
+      "x": 17,
+      "y": 6
+    },
+    {
+      "x": 21,
+      "y": 6
+    },
+    {
+      "x": 22,
+      "y": 6
+    },
+    {
+      "x": 23,
+      "y": 6
+    },
+    {
+      "x": 27,
+      "y": 6
+    },
+    {
+      "x": 28,
+      "y": 6
+    },
+    {
+      "x": 29,
+      "y": 6
+    },
+    {
+      "x": 37,
+      "y": 8
+    },
+    {
+      "x": 38,
+      "y": 8
+    },
+    {
+      "x": 39,
+      "y": 8
+    },
+    {
+      "x": 43,
+      "y": 8
+    },
+    {
+      "x": 44,
+      "y": 8
+    },
+    {
+      "x": 45,
+      "y": 8
+    },
+    {
+      "x": 46,
+      "y": 8
+    },
+    {
+      "x": 56,
+      "y": 9
+    },
+    {
+      "x": 57,
+      "y": 9
+    },
+    {
+      "x": 58,
+      "y": 9
+    },
+    {
+      "x": 59,
+      "y": 9
+    },
+    {
+      "x": 60,
+      "y": 9
+    },
+    {
+      "x": 71,
+      "y": 6
+    },
+    {
+      "x": 72,
+      "y": 6
+    },
+    {
+      "x": 78,
+      "y": 6
+    },
+    {
+      "x": 79,
+      "y": 6
+    },
+    {
+      "x": 85,
+      "y": 4
+    },
+    {
+      "x": 86,
+      "y": 4
+    },
+    {
+      "x": 89,
+      "y": 4
+    },
+    {
+      "x": 90,
+      "y": 4
+    },
+    {
+      "x": 91,
+      "y": 4
+    },
+    {
+      "x": 92,
+      "y": 4
+    },
+    {
+      "x": 99,
+      "y": 8
+    },
+    {
+      "x": 100,
+      "y": 8
+    },
+    {
+      "x": 101,
+      "y": 8
+    },
+    {
+      "x": 102,
+      "y": 8
+    },
+    {
+      "x": 106,
+      "y": 8
+    },
+    {
+      "x": 107,
+      "y": 8
+    },
+    {
+      "x": 108,
+      "y": 8
+    },
+    {
+      "x": 109,
+      "y": 8
+    },
+    {
+      "x": 110,
+      "y": 8
+    },
+    {
+      "x": 111,
+      "y": 8
+    },
+    {
+      "x": 112,
+      "y": 8
+    },
+    {
+      "x": 113,
+      "y": 8
+    },
+    {
+      "x": 118,
+      "y": 9
+    },
+    {
+      "x": 124,
+      "y": 9
+    },
+    {
+      "x": 128,
+      "y": 9
+    },
+    {
+      "x": 133,
+      "y": 9
+    },
+    {
+      "x": 145,
+      "y": 6
+    },
+    {
+      "x": 146,
+      "y": 6
+    },
+    {
+      "x": 151,
+      "y": 6
+    },
+    {
+      "x": 152,
+      "y": 6
+    },
+    {
+      "x": 153,
+      "y": 6
+    },
+    {
+      "x": 159,
+      "y": 5
+    },
+    {
+      "x": 160,
+      "y": 5
+    },
+    {
+      "x": 161,
+      "y": 5
+    },
+    {
+      "x": 168,
+      "y": 8
+    },
+    {
+      "x": 170,
+      "y": 8
+    },
+    {
+      "x": 176,
+      "y": 8
+    },
+    {
+      "x": 178,
+      "y": 8
+    },
+    {
+      "x": 184,
+      "y": 8
+    },
+    {
+      "x": 206,
+      "y": 8
+    },
+    {
+      "x": 208,
+      "y": 8
+    },
+    {
+      "x": 218,
+      "y": 8
+    },
+    {
+      "x": 219,
+      "y": 8
+    },
+    {
+      "x": 220,
+      "y": 8
+    },
+    {
+      "x": 224,
+      "y": 8
+    },
+    {
+      "x": 226,
+      "y": 8
+    },
+    {
+      "x": 228,
+      "y": 8
+    },
+    {
+      "x": 230,
+      "y": 8
+    }
+  ]
+}

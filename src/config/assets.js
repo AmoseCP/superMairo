@@ -33,6 +33,12 @@ export const ENEMY_ART = {
   // Optional — 2-5 twin bosses; each falls back to enemy_boss.png when absent.
   sovereign_blue: { key: 'enemy_sovereign_blue', path: 'assets/sprites/enemy_sovereign_blue.png', scale: 1.1 },
   sovereign_red: { key: 'enemy_sovereign_red', path: 'assets/sprites/enemy_sovereign_red.png', scale: 1.1 },
+  // --- World 3 (LEVELS3.md) ---
+  hopper: { key: 'enemy_hopper', path: 'assets/sprites/enemy_hopper.png', scale: 1.15 },
+  shyghost: { key: 'enemy_shyghost', path: 'assets/sprites/enemy_shyghost.png', scale: 1.15 },
+  turret: { key: 'enemy_turret', path: 'assets/sprites/enemy_turret.png' },
+  // 可选——3-5 终章 Boss，不画则自动复用 enemy_boss.png 并染成紫色（同 2-5 双子王的降级规则）。
+  phantomqueen: { key: 'enemy_phantomqueen', path: 'assets/sprites/enemy_phantomqueen.png', scale: 1.1 },
 }
 
 export const ITEM_ART = {
@@ -73,6 +79,12 @@ export const MISC_ART = {
   crumblePlatform: { key: 'crumble_platform', path: 'assets/sprites/crumble_platform.png' },
   // Optional — swapped in during the 0.4s shake before a crumble platform breaks.
   crumblePlatformCracked: { key: 'crumble_platform_cracked', path: 'assets/sprites/crumble_platform_cracked.png' },
+  // --- World 3 (LEVELS3.md) ---
+  springSmall: { key: 'spring_small', path: 'assets/sprites/spring_small.png' },
+  springBig: { key: 'spring_big', path: 'assets/sprites/spring_big.png' },
+  switchBlockRed: { key: 'switch_block_red', path: 'assets/sprites/switch_block_red.png' },
+  switchBlockBlue: { key: 'switch_block_blue', path: 'assets/sprites/switch_block_blue.png' },
+  turretShot: { key: 'turret_shot', path: 'assets/sprites/turret_shot.png' },
 }
 
 /** Per-level full background image — if present, replaces the procedural sky/cloud/grass backdrop for that level entirely. */
@@ -80,7 +92,11 @@ export function backgroundArtFor(levelId) {
   return { key: `bg_${levelId}`, path: `assets/backgrounds/bg-${levelId}.png` }
 }
 
-const LEVEL_IDS = ['1-1', '1-2', '1-3', '1-4', '1-5', '2-1', '2-2', '2-3', '2-4', '2-5']
+const LEVEL_IDS = [
+  '1-1', '1-2', '1-3', '1-4', '1-5',
+  '2-1', '2-2', '2-3', '2-4', '2-5',
+  '3-1', '3-2', '3-3', '3-4', '3-5',
+]
 
 /** Every {key, path} entry worth trying to preload — used by BootScene. Missing files just 404 quietly; nothing here is required to exist yet. */
 export function allArtAssets() {

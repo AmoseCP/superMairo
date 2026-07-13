@@ -22,9 +22,18 @@ import { Bat } from '../entities/enemies/Bat.js'
 import { GearMochi } from '../entities/enemies/GearMochi.js'
 import { CandySlimeKing } from '../entities/enemies/CandySlimeKing.js'
 import { SovereignSlime } from '../entities/enemies/SovereignSlime.js'
+import { PhantomQueen } from '../entities/enemies/PhantomQueen.js'
 import { Conveyor } from '../entities/Conveyor.js'
 import { FlameJet } from '../entities/FlameJet.js'
 import { CrumblePlatform } from '../entities/CrumblePlatform.js'
+import { Hopper } from '../entities/enemies/Hopper.js'
+import { ShyGhost } from '../entities/enemies/ShyGhost.js'
+import { Spring } from '../entities/Spring.js'
+import { SwitchBlock } from '../entities/SwitchBlock.js'
+import { ColorSwitch } from '../entities/ColorSwitch.js'
+import { Turret } from '../entities/Turret.js'
+import { TurretShot } from '../entities/TurretShot.js'
+import { RisingLava } from '../entities/RisingLava.js'
 import { Coin } from '../entities/items/Coin.js'
 import { Mushroom } from '../entities/items/Mushroom.js'
 import { FireFlower } from '../entities/items/FireFlower.js'
@@ -57,6 +66,8 @@ const ENEMY_TYPES = {
   iceshell: IceShell,
   bat: Bat,
   gearmochi: GearMochi,
+  hopper: Hopper,
+  shyghost: ShyGhost,
   candyslimeking: CandySlimeKing,
 }
 const ITEM_TYPES = { coin: Coin, mushroom: Mushroom, fireflower: FireFlower, star: Star, lantern: Lantern }
@@ -189,6 +200,14 @@ const WIND_PARTICLE_CAP = 40
 const WIND_PARTICLE_COLOR = 0xd9f7c9
 const WIND_GROUNDED_SCALE = 0.5
 
+// --- Springs (3-1, LEVELS3.md) ---
+const SPRING_COOLDOWN_MS = 120
+// Holding the jump button when landing on a spring adds a bonus — capped by
+// the player's own setMaxVelocity(900*WORLD_SCALE) clamp, so on a big spring
+// (already close to that ceiling) the bonus is real but small; intentional,
+// not a bug.
+const SPRING_HOLD_BONUS = 1.15
+
 /**
  * Loads a level from its JSON data file (see public/assets/maps/*.json,
  * schema documented in LEVELS.md) and builds ground/platforms/flagpole
@@ -269,16 +288,55 @@ export class GameScene extends Phaser.Scene {
     this.darkness = level.darkness ? new DarknessLayer(this, level.darkness) : null
     this._loadConveyors(level.conveyors ?? [], level.conveyorSwitches ?? [])
     this.flameJets = (level.flameJets ?? []).map((cfg) => new FlameJet(this, cfg))
+    this._loadTurrets(level.turrets ?? [])
     this._loadLavaZones(level.lavaZones ?? [])
+    // 3-4 上涨岩浆：不新开一套碰撞判定，直接把这个会动的液面描述符塞进
+    // 和 2-3/2-5 共用的 lavaZones 数组——_checkLava() 每帧读的是
+    // zone.surfaceY 这个属性本身，不缓存快照，所以让它持续变化就等于
+    // "岩浆在涨"，掉命/泡泡/双人规则全部沿用既有实现。
+    this.risingLava = level.risingLava
+      ? new RisingLava(this, { ...level.risingLava, toTile: level.widthTiles, tileSize: TILE_SIZE })
+      : null
+    if (this.risingLava) this.lavaZones.push(this.risingLava)
     this._loadWindGusts(level.windGusts ?? [])
     this.crumblePlatforms = (level.crumblePlatforms ?? []).map((cfg) => {
       const platform = new CrumblePlatform(this, cfg)
       this.groundGroup.add(platform.rect)
       return platform
     })
+    // 3-2 红蓝切换方块（LEVELS3.md）：全局状态默认 red，方块本身也是普通
+    // groundGroup 成员——不需要专属 collider，SwitchBlock.sync() 只是逐帧
+    // 切换同一个 body 的 enable 开关（同 CrumblePlatform 的套路）。
+    this.activeColor = 'red'
+    this.switchBlocks = (level.switchBlocks ?? []).map((cfg) => {
+      const block = new SwitchBlock(this, { ...cfg, tileSize: TILE_SIZE })
+      this.groundGroup.add(block.rect)
+      block.sync(this.activeColor, [])
+      return block
+    })
+    this.colorSwitches = (level.colorSwitches ?? []).map((cfg) => new ColorSwitch(this, { ...cfg, tileSize: TILE_SIZE }))
     // 2-5 twin-boss arena (see LEVELS2.md): solo = blue then red relay,
     // co-op = both at once with lower hp each.
     this.sovereignFight = level.sovereigns ? { cfg: level.sovereigns, state: 'waiting', bosses: [], walls: [] } : null
+    // 3-5 终章 Boss：破隐开关是房间固定家具，从关卡一开始就存在（不像
+    // sovereignFight 的墙那样等触发才生成）——踩钮逻辑在 _updatePhantomFight
+    // 里手写（不是 ColorSwitch 类，那个是红蓝方块系统专用的，语义不一样）。
+    this.phantomFight = level.phantomBoss
+      ? {
+          cfg: level.phantomBoss,
+          state: 'waiting',
+          boss: null,
+          walls: [],
+          lastPhase: null,
+          switches: (level.phantomBoss.switchTiles ?? []).map((t) => ({
+            x: t.x * TILE_SIZE + TILE_SIZE / 2,
+            y: t.y * TILE_SIZE + TILE_SIZE / 2,
+            cooldownUntil: 0,
+            plate: this.add.rectangle(t.x * TILE_SIZE + TILE_SIZE / 2, t.y * TILE_SIZE + TILE_SIZE / 2, 28 * WORLD_SCALE, 8 * WORLD_SCALE, 0xd1453b),
+          })),
+        }
+      : null
+    this._loadSprings(level.springs ?? [])
 
     this.startTime = this.time.now
     this.scoreManager = new ScoreManager()
@@ -303,6 +361,13 @@ export class GameScene extends Phaser.Scene {
       audioManager,
       checkpointManager: this.checkpointManager,
       touchState: this.touchControls?.state,
+      autoScroll: level.autoScroll
+        ? {
+            speedPx: level.autoScroll.speedPx * WORLD_SCALE,
+            startX: level.autoScroll.startTile * TILE_SIZE,
+            endX: level.autoScroll.endTile * TILE_SIZE,
+          }
+        : null,
       onP2Spawned: (p2) => {
         // First join this level — restore the form carried from the last one.
         if (this.priorForms?.p2) p2.applyForm(this.priorForms.p2)
@@ -321,6 +386,7 @@ export class GameScene extends Phaser.Scene {
       },
       onFireRequested: (player) => this._spawnFireball(player),
       onGameOver: () => this._onGameOver(),
+      onRespawn: () => this.risingLava?.resetToCheckpoint(this.checkpointManager?.reachedIndex ?? -1),
     })
     this._wirePlayerCollisions(this.coop.p1)
     if (this.priorForms?.p1) this.coop.p1.applyForm(this.priorForms.p1)
@@ -629,6 +695,139 @@ export class GameScene extends Phaser.Scene {
     })
   }
 
+  /**
+   * 弹簧垫（3-1）——physics body 只放进专属 `springsGroup`，**不**同时加入
+   * `groundGroup`。两个都加看似方便（enemyGroup/itemsGroup 默认只认
+   * groundGroup），实测是个坑：Arcade 按注册顺序逐个跑 collider，若同一个
+   * body 同时在两个组里，第一个 collider（CoopManager 构造时就注册好的
+   * 玩家-groundGroup 碰撞，早于这里）已经把重叠完全消掉，第二个
+   * collider（这里给玩家挂的发射回调）再检测时早已"不重叠"，回调永远
+   * 不会触发——弹簧因此变成了一块只会让人贴合站住、永远不弹的普通地面。
+   * 换成只属于 springsGroup + 单独给 enemyGroup/itemsGroup 各配一个无回调
+   * 的纯实心 collider，则两者都各自只有一次判定，互不吞掉。
+   */
+  _loadSprings(springData) {
+    this.springs = []
+    this.springsGroup = this.physics.add.staticGroup()
+    for (const cfg of springData) {
+      const spring = new Spring(this, { ...cfg, tileSize: TILE_SIZE })
+      this.springs.push(spring)
+      this.springsGroup.add(spring.rect)
+    }
+    if (springData.length) {
+      this.physics.add.collider(this.enemyGroup, this.springsGroup)
+      this.physics.add.collider(this.itemsGroup, this.springsGroup)
+    }
+  }
+
+  /** Landing on a spring launches the player — never fires for enemies/items (only wired against player.rect). */
+  _handlePlayerSpringCollision(playerRect, springRect) {
+    const spring = springRect.getData('springRef')
+    if (!spring) return
+    const player = playerRect === this.coop.p1.rect ? this.coop.p1 : this.coop.p2
+    if (!player.body.touching.down) return
+    const now = this.time.now
+    if (spring.cooldownUntil > now) return
+    spring.cooldownUntil = now + SPRING_COOLDOWN_MS
+    const holdingJump = !!player.inputManager?.state.jump
+    player.body.setVelocityY(-spring.velocity * (holdingJump ? SPRING_HOLD_BONUS : 1))
+    spring.bounce()
+    this.audioManager?.playSpring?.()
+  }
+
+  /** 3-2 红蓝切换：任一开关触发即全场翻转 + 闪白 0.1s + 音效。 */
+  _flipActiveColor() {
+    this.activeColor = this.activeColor === 'red' ? 'blue' : 'red'
+    this.cameras.main.flash(100, 255, 255, 255)
+    this.audioManager?.playSwitch?.()
+  }
+
+  /** 每帧调用：开关检测触发翻转；方块按当前 activeColor 逐块尝试同步（含防压死延迟）。 */
+  _updateSwitchBlocks(time, activePlayers, allJoinedPlayers) {
+    if (this.colorSwitches.length > 0) {
+      const switchRects = activePlayers.map((p) => p.rect)
+      for (const cs of this.colorSwitches) {
+        if (cs.update(time, switchRects, this.activeColor)) {
+          this._flipActiveColor()
+          break
+        }
+      }
+    }
+    if (this.switchBlocks.length > 0) {
+      for (const block of this.switchBlocks) block.sync(this.activeColor, allJoinedPlayers)
+    }
+  }
+
+  /**
+   * 峡谷炮塔（3-3）——固定实体，直接进 groundGroup 拿"可站顶、不可推"的
+   * 实心（不走 enemyGroup/踩踏那一套，因为它压根不可踩）。炮弹是独立的
+   * turretShotGroup：落地即碎（overlap 而非 collider，一次性判定不需要
+   * 分离）、碰火球互相对消、碰玩家扣血。炮塔本体只认火球伤害。
+   */
+  _loadTurrets(turretData) {
+    this.turrets = []
+    this.turretShots = []
+    this.turretShotGroup = this.physics.add.group({ allowGravity: true })
+    this.turretGroup = this.physics.add.staticGroup()
+    for (const cfg of turretData) {
+      const turret = new Turret(this, { ...cfg, tileSize: TILE_SIZE })
+      this.turrets.push(turret)
+      this.groundGroup.add(turret.rect)
+      this.turretGroup.add(turret.rect)
+    }
+    if (turretData.length === 0) return
+    this.physics.add.overlap(this.turretShotGroup, this.groundGroup, (shotRect) => {
+      shotRect.getData('turretShotRef')?.destroy()
+    })
+    this.physics.add.overlap(this.turretShotGroup, this.fireballGroup, (shotRect, fireballRect) => {
+      shotRect.getData('turretShotRef')?.destroy()
+      fireballRect.getData('fireballRef')?.destroy()
+    })
+    // Fireball damage only — turrets never go through the stomp/side-touch
+    // pathway at all (they're not in enemyGroup), so this is a dedicated,
+    // separate overlap rather than a reuse of the enemyGroup one.
+    this.physics.add.overlap(this.fireballGroup, this.turretGroup, (fireballRect, turretRect) => {
+      const fireball = fireballRect.getData('fireballRef')
+      const turret = turretRect.getData('enemyRef')
+      if (!fireball || fireball.dead || !turret || turret.dead) return
+      turret.onHitByShell()
+      fireball.destroy()
+      if (turret.dead && fireball.owner) this.scoreManager.addKill(this._whoFor(fireball.owner))
+    })
+  }
+
+  _updateTurrets(time) {
+    for (const turret of this.turrets) {
+      if (turret.update(time)) {
+        // Must spawn clear ABOVE the turret's own body, not merely above
+        // groundY — the turret's rect is itself a groundGroup member, and a
+        // shot spawned overlapping it gets caught by the shot's own
+        // ground-overlap-destroy rule on the very next physics step (dies
+        // the instant it's born, before anyone ever sees it airborne).
+        const spawnY = turret.rect.y - turret.rect.height / 2 - 20 * WORLD_SCALE
+        const shot = new TurretShot(this, turret.x, spawnY, 1)
+        this.turretShots.push(shot)
+        this.turretShotGroup.add(shot.rect)
+        // Group defaults reset gravity/velocity on add (same recurring
+        // "group defaults override on add" gotcha) — TurretShot already sets
+        // its own velocity in the constructor, but that happens BEFORE this
+        // add() call, so it must be re-asserted here, not there.
+        shot.circle.body.setAllowGravity(true)
+      }
+    }
+    this.turretShots = this.turretShots.filter((s) => !s.dead)
+  }
+
+  _handlePlayerTurretShotOverlap(playerRect, shotRect) {
+    const shot = shotRect.getData('turretShotRef')
+    if (!shot || shot.dead) return
+    const player = playerRect === this.coop.p1.rect ? this.coop.p1 : this.coop.p2
+    const who = playerRect === this.coop.p1.rect ? 'p1' : 'p2'
+    shot.destroy()
+    if (player.isStarActive()) return
+    if (!player.isHitInvincible() && player.takeHit()) this.coop.handlePlayerDown(who)
+  }
+
   /** 传送带对"站在带面上"的玩家/敌人/道具附加位移；开关踩住则全部暂停。 */
   _applyConveyors(time, delta) {
     if (this.conveyors.length === 0) return
@@ -834,6 +1033,103 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  /**
+   * 3-5 幻影女王：等待触发 → 封墙+生成 Boss → 相位切换时把物理体在
+   * enemyGroup/ghostGroup 之间搬家（幻影态=穿墙无敌，同 3-2 害羞幽灵的
+   * overlap-only 套路；实体态=正常踩踏/side-touch）→ 幻影态踩固定开关
+   * 强制破隐+眩晕 → 击败后拆墙。死亡时墙外复活会触发同 2-5 一样的逃生阀
+   * （见下方"anyoneInside"重置），否则封墙关着但 Boss 已经没了会软锁。
+   */
+  _updatePhantomFight(time, activePlayers) {
+    const fight = this.phantomFight
+    if (!fight) return
+    const { triggerTile, wallTiles, spawnTile } = fight.cfg
+
+    if (fight.state === 'waiting') {
+      if (!activePlayers.some((p) => p.rect.x > triggerTile * TILE_SIZE)) return
+      fight.state = 'active'
+      for (const wx of wallTiles) {
+        const wall = this.add.rectangle(wx * TILE_SIZE + TILE_SIZE / 2, (spawnTile.y - 2) * TILE_SIZE, TILE_SIZE, 8 * TILE_SIZE, 0x2d1f3a)
+        this.physics.add.existing(wall, true)
+        this.groundGroup.add(wall)
+        fight.walls.push(wall)
+      }
+      const boss = new PhantomQueen(this, spawnTile.x * TILE_SIZE + TILE_SIZE / 2, spawnTile.y * TILE_SIZE + TILE_SIZE / 2, {
+        groundGroup: this.groundGroup,
+      })
+      this.enemies.push(boss)
+      this.enemyGroup.add(boss.rect)
+      fight.boss = boss
+      fight.lastPhase = 'solid'
+      this.audioManager?.playHurt()
+      return
+    }
+    if (fight.state !== 'active') return
+
+    const boss = fight.boss
+    // 墙外复活的逃生阀：房内没有活跃玩家时视为"放弃重开"，拆掉这场战斗
+    // 让玩家重新助跑触发，不会卡死在"墙还在但没人打得到 Boss"的死局。
+    const left = wallTiles[0] * TILE_SIZE
+    const right = (wallTiles[wallTiles.length - 1] + 1) * TILE_SIZE
+    const anyoneInside = activePlayers.some((p) => p.rect.x > left && p.rect.x < right)
+    if (!anyoneInside) {
+      if (!boss.dead) {
+        boss.dead = true
+        boss.body.enable = false
+        boss.rect.destroy()
+        boss.artSprite?.destroy()
+        for (const part of boss._face) part.destroy()
+      }
+      for (const wall of fight.walls) wall.destroy()
+      fight.walls = []
+      fight.boss = null
+      fight.state = 'waiting'
+      return
+    }
+
+    if (boss.dead) {
+      fight.state = 'done'
+      for (const wall of fight.walls) {
+        wall.body.enable = false
+        this.tweens.add({ targets: wall, alpha: 0, duration: 500, onComplete: () => wall.destroy() })
+      }
+      for (const sw of fight.switches) sw.plate.destroy()
+      this.audioManager?.play1Up()
+      return
+    }
+
+    // 相位切换时搬家物理体归属（entity 自己只翻 phaseState，不知道 Group 存在）。
+    if (boss.phaseState !== fight.lastPhase) {
+      if (boss.phaseState === 'phantom') {
+        this.enemyGroup.remove(boss.rect)
+        this.ghostGroup.add(boss.rect)
+      } else {
+        this.ghostGroup.remove(boss.rect)
+        this.enemyGroup.add(boss.rect)
+        // Group 归队会把 allowGravity 重置成 Group 默认值——PhantomQueen 自己
+        // 在 _breakPhantom 里已经 setAllowGravity(true)，这里再保险一遍。
+        boss.body.setAllowGravity(true)
+      }
+      fight.lastPhase = boss.phaseState
+    }
+
+    // 幻影态才需要检测开关——实体态踩了也没意义（她本来就打得到）。
+    if (boss.phaseState === 'phantom') {
+      for (const sw of fight.switches) {
+        if (time < sw.cooldownUntil) continue
+        const occupied = activePlayers.some(
+          (p) => Math.abs(p.rect.x - sw.x) < 24 * WORLD_SCALE && Math.abs(p.rect.y + p.rect.height / 2 - sw.y) < 30 * WORLD_SCALE,
+        )
+        if (occupied) {
+          sw.cooldownUntil = time + 8000
+          boss._breakPhantom(time)
+          this.audioManager?.playSwitch?.()
+          break
+        }
+      }
+    }
+  }
+
   /** 喷火柱伤害（与 PipeTrap 同一套手动 AABB + 共享 800ms 危害冷却）。 */
   _checkFlameJets(player, who) {
     if (!player.rect.visible || player.isStarActive()) return
@@ -984,6 +1280,13 @@ export class GameScene extends Phaser.Scene {
   _loadEnemies(enemyData) {
     this.enemies = []
     this.enemyGroup = this.physics.add.group()
+    // ShyGhost (3-2) is unstompable and must never physically block the
+    // player ("踩=穿过，不伤不死") — a single collider on enemyGroup can't
+    // give one member different collision semantics than the rest, so
+    // pass-through enemies get routed into their own overlap-only group
+    // instead of enemyGroup (see _wirePlayerCollisions / _loadItemsAndBlocks
+    // for the matching fireball/player overlaps).
+    this.ghostGroup = this.physics.add.group({ allowGravity: false })
     for (const { type, x, y } of enemyData) {
       const EnemyClass = ENEMY_TYPES[type]
       if (!EnemyClass) continue
@@ -991,8 +1294,9 @@ export class GameScene extends Phaser.Scene {
         groundGroup: this.groundGroup,
       })
       this.enemies.push(enemy)
-      this.enemyGroup.add(enemy.rect)
-      // Group defaults reset allowGravity on add — restore flyers (Bat).
+      if (enemy.passThrough) this.ghostGroup.add(enemy.rect)
+      else this.enemyGroup.add(enemy.rect)
+      // Group defaults reset allowGravity on add — restore flyers (Bat/ShyGhost).
       if (enemy.noGravity) enemy.body.setAllowGravity(false)
     }
     this.physics.add.collider(this.enemyGroup, this.groundGroup)
@@ -1075,6 +1379,14 @@ export class GameScene extends Phaser.Scene {
       // A boss soaks partial ranged hits — only an actual kill scores.
       if (enemy.dead && fireball.owner) this.scoreManager.addKill(this._whoFor(fireball.owner))
     })
+    this.physics.add.overlap(this.fireballGroup, this.ghostGroup, (fireballRect, ghostRect) => {
+      const fireball = fireballRect.getData('fireballRef')
+      const ghost = ghostRect.getData('enemyRef')
+      if (!fireball || fireball.dead || !ghost || ghost.dead) return
+      ghost.onHitByShell()
+      fireball.destroy()
+      if (ghost.dead && fireball.owner) this.scoreManager.addKill(this._whoFor(fireball.owner))
+    })
   }
 
   _spawnItem(type, x, y) {
@@ -1123,6 +1435,20 @@ export class GameScene extends Phaser.Scene {
     for (const door of this.timedDoors) {
       this.physics.add.collider(player.rect, door.doorRect)
     }
+    // Springs are ALSO in groundGroup (generic solidity for enemies/default
+    // separation) — this second collider is what actually launches players;
+    // it never fires for enemyGroup/itemsGroup since only player.rect is wired here.
+    this.physics.add.collider(player.rect, this.springsGroup, (playerRect, springRect) =>
+      this._handlePlayerSpringCollision(playerRect, springRect),
+    )
+    // ShyGhost: overlap (not collider) — contact must hurt the player without
+    // ever physically blocking them (see ghostGroup comment in _loadEnemies).
+    this.physics.add.overlap(player.rect, this.ghostGroup, (playerRect, ghostRect) =>
+      this._handlePlayerGhostOverlap(playerRect, ghostRect),
+    )
+    this.physics.add.overlap(player.rect, this.turretShotGroup, (playerRect, shotRect) =>
+      this._handlePlayerTurretShotOverlap(playerRect, shotRect),
+    )
   }
 
   /** Maps a Player instance (not a rect) back to its 'p1'/'p2' key. */
@@ -1142,7 +1468,10 @@ export class GameScene extends Phaser.Scene {
     // correctly reflects "just landed on something" for this same step.
     const playerBottom = player.rect.y + player.rect.height / 2
     const enemyTop = enemyRect.y - enemyRect.height / 2
-    const isStomp = player.body.touching.down && playerBottom <= enemyTop + STOMP_TOLERANCE_PX
+    // Enemies can opt into a wider window (Hopper mid-hop — LEVELS3.md
+    // "跳跃中被踩判定放宽，鼓励空中拦截"); everyone else uses the default.
+    const tolerance = enemy.stompTolerance ?? STOMP_TOLERANCE_PX
+    const isStomp = player.body.touching.down && playerBottom <= enemyTop + tolerance
     if (isStomp) {
       enemy.onStomp(player)
       player.body.setVelocityY(-STOMP_BOUNCE_VELOCITY)
@@ -1160,6 +1489,24 @@ export class GameScene extends Phaser.Scene {
     if (player.isStarActive()) {
       enemy.onHitByShell()
       this.scoreManager.addKill(who)
+    } else if (!player.isHitInvincible() && player.takeHit()) {
+      this.coop.handlePlayerDown(who)
+    }
+  }
+
+  /** ShyGhost (3-2): no stomp branch at all — any contact from any angle either hurts the player or kills the ghost. */
+  _handlePlayerGhostOverlap(playerRect, ghostRect) {
+    const ghost = ghostRect.getData('enemyRef')
+    if (!ghost || ghost.dead) return
+    const player = playerRect === this.coop.p1.rect ? this.coop.p1 : this.coop.p2
+    const who = playerRect === this.coop.p1.rect ? 'p1' : 'p2'
+    if (!ghost.onSideTouch(player)) return
+    if (player.isStarActive()) {
+      ghost.onHitByShell()
+      // A phased-out boss (PhantomQueen mid-phantom) no-ops onHitByShell —
+      // only credit the kill if it actually died, same guard as every other
+      // ranged/star-kill path in this file.
+      if (ghost.dead) this.scoreManager.addKill(who)
     } else if (!player.isHitInvincible() && player.takeHit()) {
       this.coop.handlePlayerDown(who)
     }
@@ -1311,17 +1658,24 @@ export class GameScene extends Phaser.Scene {
     // wind > ice — conveyors run after carry so a glued rider is exempt.
     this._applyConveyors(time, delta)
     for (const jet of this.flameJets) jet.update(time)
+    this._updateTurrets(time)
+    if (this.risingLava) {
+      const lavaPlayers = [
+        this.coop.p1Bubble ? null : this.coop.p1,
+        this.coop.p2Joined && !this.coop.p2Bubble ? this.coop.p2 : null,
+      ].filter(Boolean)
+      this.risingLava.update(time, delta, lavaPlayers)
+    }
     this._checkLava()
     for (const pipe of this.pipes) pipe.update(time)
-    {
-      const crumbleRiders = [this.coop.p1, this.coop.p2Joined ? this.coop.p2 : null].filter(Boolean)
-      for (const cp of this.crumblePlatforms) cp.update(time, crumbleRiders)
-    }
+    const joinedPlayers = [this.coop.p1, this.coop.p2Joined ? this.coop.p2 : null].filter(Boolean)
+    for (const cp of this.crumblePlatforms) cp.update(time, joinedPlayers)
 
     const activePlayers = [
       this.coop.p1Bubble ? null : this.coop.p1,
       this.coop.p2Joined && !this.coop.p2Bubble ? this.coop.p2 : null,
     ].filter(Boolean)
+    this._updateSwitchBlocks(time, activePlayers, joinedPlayers)
     for (const player of activePlayers) {
       this._checkPipeEntry(player)
       this._checkPipeTraps(player, this._whoFor(player))
@@ -1331,6 +1685,7 @@ export class GameScene extends Phaser.Scene {
     }
     this._updateWind(time, activePlayers)
     this._updateSovereignFight(time, activePlayers)
+    this._updatePhantomFight(time, activePlayers)
 
     if (this.dualSwitchChests.length > 0 || this.timedDoors.length > 0) {
       const activeRects = activePlayers.map((p) => p.rect)

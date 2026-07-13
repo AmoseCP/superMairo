@@ -83,11 +83,17 @@ export class LevelSelectScene extends Phaser.Scene {
   }
 
   _layout(gameSize) {
+    // Generalized for any row count (was hand-tuned for exactly 2 rows,
+    // hardcoding "2" in two places) — 3 worlds × 5 levels now makes a 5×3
+    // grid, and more worlds keep working without touching this again.
+    const rows = Math.ceil(this.levelIds.length / COLS)
     const cx = gameSize.width / 2
-    const gridTop = gameSize.height / 2 - CARD_H / 2 - (CARD_H + CARD_GAP_Y) / 2 + 20
+    const gridTop = gameSize.height / 2 - CARD_H / 2 - ((rows - 1) * (CARD_H + CARD_GAP_Y)) / 2 + 20
     this.root.setPosition(cx, gridTop)
+    // Title/hint offsets are relative to row 0 / the last row respectively —
+    // constant regardless of how many rows exist below/above them.
     this._title.setPosition(0, -CARD_H - 60)
-    this._hint.setPosition(0, 2 * (CARD_H + CARD_GAP_Y) + 20)
+    this._hint.setPosition(0, rows * (CARD_H + CARD_GAP_Y) + 20)
   }
 
   _setIndex(i) {

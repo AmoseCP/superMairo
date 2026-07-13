@@ -132,6 +132,22 @@ for (const file of readdirSync(MAPS).filter((f) => f.endsWith('.json')).sort()) 
     }
     const floorTop = Math.min(...floors.map((f) => f.top)) * TILE
     if (feet > floorTop) report(lvl, `${pt.kind}(${pt.x},${pt.y}) 复活时脚部嵌入地面 ${feet - floorTop}px（会穿地连锁死亡）`)
+
+    // 复活点（含 P2 的 -1.5 格偏移落点）不得与管道实体水平重叠且身位落在管身高度带内
+    const PLAYER_HALF_W = 42
+    for (const [who, offset] of [['P1', 0], ['P2', -1.5 * TILE]]) {
+      const cx = pt.x * TILE + TILE / 2 + offset
+      for (const p of d.pipes ?? []) {
+        const w = (p.widthTiles ?? 2) * TILE, h = (p.heightTiles ?? 3) * TILE
+        const pipeCx = p.x * TILE + TILE / 2
+        const pipeTop = p.groundTileY * TILE - h
+        const pipeBottom = p.groundTileY * TILE
+        const head = feet - SMALL
+        if (Math.abs(cx - pipeCx) < w / 2 + PLAYER_HALF_W && feet > pipeTop && head < pipeBottom) {
+          report(lvl, `${pt.kind}(${pt.x},${pt.y}) 的 ${who} 复活位与管道@${p.x} 实体重叠（会嵌入卡死）`)
+        }
+      }
+    }
   }
 
   // ---- 5. 纵版关逐列兜底 ----

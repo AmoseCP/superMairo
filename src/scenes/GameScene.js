@@ -786,6 +786,32 @@ export class GameScene extends Phaser.Scene {
       this.audioManager?.playHurt() // menacing sting placeholder
       return
     }
+    // Death mid-fight respawns at a checkpoint OUTSIDE the sealed arena —
+    // without this reset the walls stay up with live bosses inside and the
+    // level soft-locks. When no active player remains inside the arena,
+    // tear the fight down so walking back in re-triggers it fresh.
+    if (fight.state === 'blue' || fight.state === 'red' || fight.state === 'duo') {
+      const left = wallTiles[0] * TILE_SIZE
+      const right = (wallTiles[1] + 1) * TILE_SIZE
+      const anyoneInside = activePlayers.some((p) => p.rect.x > left && p.rect.x < right)
+      if (!anyoneInside) {
+        for (const boss of fight.bosses) {
+          if (!boss.dead) {
+            boss.dead = true
+            boss.body.enable = false
+            boss.rect.destroy()
+            boss.artSprite?.destroy()
+            for (const part of boss._face) part.destroy()
+          }
+        }
+        for (const wall of fight.walls) wall.destroy()
+        fight.bosses = []
+        fight.walls = []
+        fight.state = 'waiting'
+        return
+      }
+    }
+
     if (fight.state === 'blue') {
       if (fight.bosses[0]?.dead) {
         fight.state = 'red'
@@ -1256,10 +1282,16 @@ export class GameScene extends Phaser.Scene {
 
   update(time, delta) {
     if (this.levelComplete) {
+      // Require a RELEASE-then-press to advance. Two input-bleed bugs hide
+      // here otherwise: (1) the jump that carried the player onto the flag
+      // leaves the Key's JustDown latch set, instantly skipping this score
+      // panel; (2) a still-held Space/A generates auto-repeat events that
+      // chain straight through the next scenes (results → level select →
+      // accidentally starting level 1-1).
       const pad = this.input.gamepad?.getPad(0)
-      if (Phaser.Input.Keyboard.JustDown(this.spaceKey) || pad?.A) {
-        if (!this._levelCompleteAdvancing) this._advanceAfterLevelComplete()
-      }
+      const confirmDown = this.spaceKey.isDown || !!pad?.A
+      if (!confirmDown) this._advanceArmed = true
+      if (this._advanceArmed && confirmDown && !this._levelCompleteAdvancing) this._advanceAfterLevelComplete()
       return
     }
     this.coop.update(time, delta)
@@ -1416,6 +1448,7 @@ export class GameScene extends Phaser.Scene {
   _onLevelComplete(toucher) {
     this.levelComplete = true
     this._levelCompleteAdvancing = false
+    this._advanceArmed = false // must release Space/A once before it can confirm
     this.coop.p1.setActive(false)
     if (this.coop.p2Joined) this.coop.p2.setActive(false)
     this.audioManager?.playFlagpole()

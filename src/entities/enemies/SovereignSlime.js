@@ -1,5 +1,6 @@
 import { CandySlimeKing } from './CandySlimeKing.js'
 import { TILE_SIZE, WORLD_SCALE } from '../../config/constants.js'
+import { ENEMY_ART } from '../../config/assets.js'
 
 const RETARGET_MS = 3000
 const ICE_PATCH_MS = 4000
@@ -22,16 +23,27 @@ const VARIANTS = {
  */
 export class SovereignSlime extends CandySlimeKing {
   constructor(scene, x, y, { variant = 'blue', hp = 3, ...opts } = {}) {
-    super(scene, x, y, { ...opts, color: VARIANTS[variant].color })
+    // Prefer variant-specific art (enemy_sovereign_blue/red); fall back to
+    // the shared boss art, which then gets tinted to the variant color.
+    const variantArt = ENEMY_ART[`sovereign_${variant}`]
+    const hasVariantArt = scene.textures.exists(variantArt.key)
+    super(scene, x, y, { ...opts, color: VARIANTS[variant].color, art: hasVariantArt ? variantArt : ENEMY_ART.candyslimeking })
     this.variant = variant
+    this._hasVariantArt = hasVariantArt
     this.hp = hp
     this._retargetAt = 0
     if (!this.artSprite) this.rect.setFillStyle(VARIANTS[variant].color)
+    this._clearTint()
   }
 
   _clearTint() {
-    if (this.artSprite) this.artSprite.setTint(VARIANTS[this.variant].tint)
-    else this.rect.setFillStyle(VARIANTS[this.variant].color)
+    if (this.artSprite) {
+      // Dedicated variant art is already the right color — don't tint it.
+      if (this._hasVariantArt) this.artSprite.clearTint()
+      else this.artSprite.setTint(VARIANTS[this.variant].tint)
+    } else {
+      this.rect.setFillStyle(VARIANTS[this.variant].color)
+    }
   }
 
   update(time) {

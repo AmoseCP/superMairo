@@ -24,7 +24,10 @@ export class LevelSelectScene extends Phaser.Scene {
     this.cameras.main.fadeIn(250, 0, 0, 0)
     this._starting = false
     this._navReadyAt = 0
-    this._prevA = true // swallow the confirm press that may have opened this menu
+    // Release-then-press: a Space/Enter/A still held from the previous
+    // scene (results screen dismissal etc.) must not instantly start the
+    // level the cursor happens to sit on.
+    this._confirmArmed = false
 
     this.levelIds = Object.keys(LEVELS)
     this.index = 0
@@ -143,9 +146,8 @@ export class LevelSelectScene extends Phaser.Scene {
       else if (down) this._nav(0, 1)
     }
 
-    const aNow = !!pad?.A
-    const confirm = Phaser.Input.Keyboard.JustDown(k.space) || Phaser.Input.Keyboard.JustDown(k.enter) || (aNow && !this._prevA)
-    this._prevA = aNow
-    if (confirm) this._start()
+    const confirmDown = k.space.isDown || k.enter.isDown || !!pad?.A
+    if (!confirmDown) this._confirmArmed = true
+    if (this._confirmArmed && confirmDown) this._start()
   }
 }

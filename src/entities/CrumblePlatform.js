@@ -1,4 +1,6 @@
 import { TILE_SIZE, WORLD_SCALE } from '../config/constants.js'
+import { MISC_ART } from '../config/assets.js'
+import { tryArtSprite } from '../utils/artSwap.js'
 
 const SHAKE_MS = 400
 const RESPAWN_MS = 3000
@@ -20,6 +22,17 @@ export class CrumblePlatform {
     scene.physics.add.existing(this.rect, true)
     this.state = 'intact' // intact | shaking | broken
     this.stateUntil = 0
+
+    // Real art takes over when present; the optional "cracked" frame is
+    // swapped in during the pre-break shake (see assets.js MISC_ART).
+    this.artSprite = tryArtSprite(scene, this.rect.x, this.rect.y, MISC_ART.crumblePlatform, width, TILE_SIZE)
+    if (this.artSprite) this.rect.setVisible(false)
+    this._hasCrackedArt = !!this.artSprite && scene.textures.exists(MISC_ART.crumblePlatformCracked.key)
+  }
+
+  /** The currently-drawn shape (art if present, placeholder rect otherwise). */
+  get _visual() {
+    return this.artSprite ?? this.rect
   }
 
   _riderOn(players) {
@@ -46,7 +59,8 @@ export class CrumblePlatform {
       if (this._riderOn(players)) {
         this.state = 'shaking'
         this.stateUntil = time + SHAKE_MS
-        this.scene.tweens.add({ targets: this.rect, alpha: 0.55, duration: 80, yoyo: true, repeat: 4 })
+        if (this._hasCrackedArt) this.artSprite.setTexture(MISC_ART.crumblePlatformCracked.key)
+        this.scene.tweens.add({ targets: this._visual, alpha: 0.55, duration: 80, yoyo: true, repeat: 4 })
       }
     } else if (this.state === 'shaking') {
       if (time >= this.stateUntil) {
@@ -54,6 +68,7 @@ export class CrumblePlatform {
         this.stateUntil = time + RESPAWN_MS
         this.rect.body.enable = false
         this.rect.setVisible(false)
+        this.artSprite?.setVisible(false)
         for (const dx of [-1, 0, 1]) {
           const chip = this.scene.add.rectangle(this.rect.x + dx * 20 * WORLD_SCALE, this.rect.y, CHIP_SIZE, CHIP_SIZE, BODY_COLOR)
           this.scene.tweens.add({
@@ -71,8 +86,13 @@ export class CrumblePlatform {
       if (time >= this.stateUntil && !this._playerOverlaps(players)) {
         this.state = 'intact'
         this.rect.body.enable = true
-        this.rect.setVisible(true)
+        this.rect.setVisible(!this.artSprite)
         this.rect.setAlpha(1)
+        if (this.artSprite) {
+          if (this._hasCrackedArt) this.artSprite.setTexture(MISC_ART.crumblePlatform.key)
+          this.artSprite.setVisible(true)
+          this.artSprite.setAlpha(1)
+        }
       }
     }
   }

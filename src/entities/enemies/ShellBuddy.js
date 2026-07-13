@@ -30,8 +30,9 @@ export class ShellBuddy extends Enemy {
     this.state = STATE.WALK
     // Instance field so subclasses (IceShell) can run a faster shell.
     this.shellSpeed = DEFAULT_SHELL_SPEED
-    this._shellArtKey =
-      this.artSprite && scene.textures.exists(ENEMY_ART.shellbuddy_shell.key) ? ENEMY_ART.shellbuddy_shell.key : null
+    // Walk/tucked art keys — subclasses re-point these to their own pair
+    // via _configureShellArt (IceShell → enemy_iceshell / _shell).
+    this._configureShellArt(ENEMY_ART.shellbuddy, ENEMY_ART.shellbuddy_shell)
 
     if (!this.artSprite) {
       this.stripeTop = scene.add.rectangle(x, y, STRIPE_WIDTH, STRIPE_HEIGHT, STRIPE_COLOR)
@@ -44,11 +45,17 @@ export class ShellBuddy extends Enemy {
     this._updateFace()
   }
 
+  /** Points the walk/tucked texture pair at a variant's own art (see IceShell). */
+  _configureShellArt(walkArt, shellArt) {
+    this._walkArtKey = walkArt.key
+    this._shellArtKey = this.artSprite && this.scene.textures.exists(shellArt.key) ? shellArt.key : null
+  }
+
   _updateFace() {
     super._updateFace()
     if (this.artSprite) {
       if (this._shellArtKey) {
-        const wantKey = this.state !== STATE.WALK ? this._shellArtKey : ENEMY_ART.shellbuddy.key
+        const wantKey = this.state !== STATE.WALK ? this._shellArtKey : this._walkArtKey
         if (this.artSprite.texture.key !== wantKey) this.artSprite.setTexture(wantKey)
       }
       return

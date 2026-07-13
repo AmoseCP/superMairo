@@ -13,5 +13,7 @@ export class IceShell extends ShellBuddy {
   constructor(scene, x, y, opts) {
     super(scene, x, y, { ...opts, color: 0x9fd8f0, art: ENEMY_ART.iceshell })
     this.shellSpeed = ICE_SHELL_SPEED
+    // Own walk/tucked texture pair (enemy_iceshell / enemy_iceshell_shell).
+    this._configureShellArt(ENEMY_ART.iceshell, ENEMY_ART.iceshell_shell)
   }
 }

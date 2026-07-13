@@ -26,8 +26,13 @@ export const ENEMY_ART = {
   candyslimeking: { key: 'enemy_boss', path: 'assets/sprites/enemy_boss.png', scale: 1.1 },
   // --- World 2 (LEVELS2.md) ---
   iceshell: { key: 'enemy_iceshell', path: 'assets/sprites/enemy_iceshell.png', scale: 1.15 },
+  // Optional — shown while an IceShell is tucked/kicked (falls back to enemy_iceshell).
+  iceshell_shell: { key: 'enemy_iceshell_shell', path: 'assets/sprites/enemy_iceshell_shell.png', scale: 1.15 },
   bat: { key: 'enemy_bat', path: 'assets/sprites/enemy_bat.png', scale: 1.15 },
   gearmochi: { key: 'enemy_gearmochi', path: 'assets/sprites/enemy_gearmochi.png', scale: 1.15 },
+  // Optional — 2-5 twin bosses; each falls back to enemy_boss.png when absent.
+  sovereign_blue: { key: 'enemy_sovereign_blue', path: 'assets/sprites/enemy_sovereign_blue.png', scale: 1.1 },
+  sovereign_red: { key: 'enemy_sovereign_red', path: 'assets/sprites/enemy_sovereign_red.png', scale: 1.1 },
 }
 
 export const ITEM_ART = {
@@ -61,6 +66,13 @@ export const MISC_ART = {
   switchPlate: { key: 'switch_plate', path: 'assets/sprites/switch_plate.png' },
   chest: { key: 'chest', path: 'assets/sprites/chest.png' },
   door: { key: 'door', path: 'assets/sprites/door.png' },
+  // --- World 2 (LEVELS2.md) ---
+  flameJet: { key: 'flame_jet', path: 'assets/sprites/flame_jet.png' },
+  // Conveyor surface — TILED horizontally like ground_tile (must loop seamlessly left↔right).
+  belt: { key: 'belt', path: 'assets/sprites/belt.png' },
+  crumblePlatform: { key: 'crumble_platform', path: 'assets/sprites/crumble_platform.png' },
+  // Optional — swapped in during the 0.4s shake before a crumble platform breaks.
+  crumblePlatformCracked: { key: 'crumble_platform_cracked', path: 'assets/sprites/crumble_platform_cracked.png' },
 }
 
 /** Per-level full background image — if present, replaces the procedural sky/cloud/grass backdrop for that level entirely. */

@@ -52,13 +52,17 @@ export class GameOverScene extends Phaser.Scene {
       })
       .setOrigin(0.5)
 
-    this.input.keyboard.once('keydown-SPACE', () => this._toLevelSelect())
     this.input.once('pointerdown', () => this._toLevelSelect())
+    // Release-then-press poll — see VictoryScene note (input bleed-through).
+    this.spaceKey = this.input.keyboard.addKey('SPACE')
+    this._confirmArmed = false
   }
 
   update() {
     const pad = this.input.gamepad?.getPad(0)
-    if (pad?.A && !this._retrying) this._toLevelSelect()
+    const confirmDown = this.spaceKey.isDown || !!pad?.A
+    if (!confirmDown) this._confirmArmed = true
+    if (this._confirmArmed && confirmDown && !this._retrying) this._toLevelSelect()
   }
 
   _toLevelSelect() {

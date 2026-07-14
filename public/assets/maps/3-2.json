@@ -16,7 +16,7 @@
     {
       "fromTile": 36,
       "toTile": 54,
-      "tileY": 13
+      "tileY": 14
     },
     {
       "fromTile": 54,
@@ -43,7 +43,7 @@
     {
       "fromTile": 74,
       "toTile": 76,
-      "tileY": 9
+      "tileY": 8
     },
     {
       "fromTile": 81,
@@ -56,6 +56,11 @@
       "tileY": 5
     },
     {
+      "fromTile": 98,
+      "toTile": 104,
+      "tileY": 11
+    },
+    {
       "fromTile": 104,
       "toTile": 105,
       "tileY": 11
@@ -63,7 +68,7 @@
     {
       "fromTile": 137,
       "toTile": 139,
-      "tileY": 9
+      "tileY": 8
     },
     {
       "fromTile": 140,
@@ -119,7 +124,7 @@
     },
     {
       "x": 70,
-      "y": 9,
+      "y": 8,
       "widthTiles": 3,
       "color": "red"
     },
@@ -133,12 +138,6 @@
       "x": 84,
       "y": 5,
       "widthTiles": 3,
-      "color": "red"
-    },
-    {
-      "x": 98,
-      "y": 11,
-      "widthTiles": 6,
       "color": "red"
     },
     {
@@ -191,7 +190,8 @@
     },
     {
       "x": 104,
-      "y": 11
+      "y": 11,
+      "forceColor": "blue"
     },
     {
       "x": 141,

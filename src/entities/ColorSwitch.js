@@ -16,7 +16,7 @@ const TINT = { red: 0xd1453b, blue: 0x3b7dd1 }
  * 触发"的地面机关，没必要另画一套图）。
  */
 export class ColorSwitch {
-  constructor(scene, { x, y, tileSize = TILE_SIZE }) {
+  constructor(scene, { x, y, tileSize = TILE_SIZE, forceColor = null }) {
     this.scene = scene
     this.x = x * tileSize + tileSize / 2
     // `y` is the row whose TOP edge is the floor surface it stands on (same
@@ -24,6 +24,10 @@ export class ColorSwitch {
     // the button sits just above that line, not centered inside the row.
     this.y = y * tileSize - HEIGHT / 2
     this.cooldownUntil = 0
+    // Optional: instead of toggling, always set activeColor to this value —
+    // used where an earlier stretch of optional switches leaves the color
+    // genuinely unpredictable by the time the player reaches this one.
+    this.forceColor = forceColor
 
     this.artSprite = tryArtSprite(scene, this.x, this.y, MISC_ART.switchPlate, WIDTH, HEIGHT)
     this.rect = this.artSprite ?? scene.add.rectangle(this.x, this.y, WIDTH, HEIGHT, 0xdddddd)

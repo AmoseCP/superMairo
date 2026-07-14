@@ -40,12 +40,23 @@
       "tileY": 10
     }
   ],
-  "platforms": [],
+  "platforms": [
+    {
+      "fromTile": 120,
+      "toTile": 124,
+      "tileY": 10
+    },
+    {
+      "fromTile": 178,
+      "toTile": 182,
+      "tileY": 10
+    }
+  ],
   "springs": [
     {
       "x": 115,
       "groundTileY": 10,
-      "size": "small"
+      "size": "big"
     }
   ],
   "turrets": [

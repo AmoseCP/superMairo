@@ -114,8 +114,8 @@ export class CoopManager {
     if (this.p2Joined) this._updateBubble(time, 'p2')
 
     if (this.checkpointManager) {
-      if (!this.p1Bubble) this.checkpointManager.checkReached(this.p1.rect.x)
-      if (this.p2Joined && !this.p2Bubble) this.checkpointManager.checkReached(this.p2.rect.x)
+      if (!this.p1Bubble) this.checkpointManager.checkReached(this.p1.rect.x, this.p1.rect.y)
+      if (this.p2Joined && !this.p2Bubble) this.checkpointManager.checkReached(this.p2.rect.x, this.p2.rect.y)
     }
 
     this._updateCamera(time, delta)

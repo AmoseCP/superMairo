@@ -736,8 +736,14 @@ export class GameScene extends Phaser.Scene {
   }
 
   /** 3-2 红蓝切换：任一开关触发即全场翻转 + 闪白 0.1s + 音效。 */
-  _flipActiveColor() {
-    this.activeColor = this.activeColor === 'red' ? 'blue' : 'red'
+  /**
+   * forceColor 开关（3-2 深坑桥中段岛屿）：不管踩之前是什么颜色，踩完
+   * 一律落到 forceColor——用来抵消关卡前段可选开关造成的"到桥头时颜色
+   * 不确定"问题（普通 toggle 开关做不到"设为某色"，只能"翻转"）。普通
+   * 开关不传这个参数，行为不变。
+   */
+  _flipActiveColor(forceColor) {
+    this.activeColor = forceColor ?? (this.activeColor === 'red' ? 'blue' : 'red')
     this.cameras.main.flash(100, 255, 255, 255)
     this.audioManager?.playSwitch?.()
   }
@@ -748,7 +754,7 @@ export class GameScene extends Phaser.Scene {
       const switchRects = activePlayers.map((p) => p.rect)
       for (const cs of this.colorSwitches) {
         if (cs.update(time, switchRects, this.activeColor)) {
-          this._flipActiveColor()
+          if (!cs.forceColor || cs.forceColor !== this.activeColor) this._flipActiveColor(cs.forceColor)
           break
         }
       }

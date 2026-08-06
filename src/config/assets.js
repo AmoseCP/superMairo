@@ -43,6 +43,9 @@ export const ENEMY_ART = {
 
 export const ITEM_ART = {
   coin: { key: 'item_coin', path: 'assets/sprites/item_coin.png' },
+  // 每关 3 枚的收集品（entities/items/BigCoin.js）——没有美术时退回程序化
+  // 大圆 + 呼吸光环，同样一眼可辨。
+  bigCoin: { key: 'item_big_coin', path: 'assets/sprites/item_big_coin.png' },
   mushroom: { key: 'item_mushroom', path: 'assets/sprites/item_mushroom.png' },
   fireflower: { key: 'item_fireflower', path: 'assets/sprites/item_fireflower.png' },
   star: { key: 'item_star', path: 'assets/sprites/item_star.png' },

@@ -8,6 +8,7 @@ export const SFX_AUDIO = {
   jump: { key: 'sfx_jump', path: 'assets/audio/sfx_jump.mp3' },
   land: { key: 'sfx_land', path: 'assets/audio/sfx_land.mp3' },
   coin: { key: 'sfx_coin', path: 'assets/audio/sfx_coin.mp3' },
+  bigCoin: { key: 'sfx_big_coin', path: 'assets/audio/sfx_big_coin.mp3' },
   powerUp: { key: 'sfx_powerup', path: 'assets/audio/sfx_powerup.mp3' },
   stomp: { key: 'sfx_stomp', path: 'assets/audio/sfx_stomp.mp3' },
   hurt: { key: 'sfx_hurt', path: 'assets/audio/sfx_hurt.mp3' },

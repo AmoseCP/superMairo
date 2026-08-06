@@ -64,7 +64,16 @@ const SPRING_W = 56 * 3, SPRING_H = 12 * 3 // Spring.js SPRING_WIDTH / SPRING_HE
 const CHEST_W = 28 * 3, CHEST_H = 22 * 3   // DualSwitchChest.js CHEST_WIDTH / CHEST_HEIGHT
 const TURRET_W = 40 * 3, TURRET_H = 44 * 3 // Turret.js WIDTH / HEIGHT
 const COIN_SIZE = 18 * 3          // items/Coin.js 的碰撞体边长
-const PLAYER_JUMP_APEX = (520 * 3) ** 2 / (2 * 1200 * 3) // ≈338px，v²/2g（constants.js）
+const BIG_COIN_SIZE = 16 * 3 * 2   // items/BigCoin.js BIG_COIN_RADIUS × 2
+const BIG_COINS_PER_LEVEL = 3      // 选关界面按 ★★★ 显示，每关必须正好 3 枚
+// 理论跳跃顶点是 v²/2g ≈ 338px，但按帧离散积分实测只到 ~325px。规则 14 统一
+// 用规则 1 的保守台阶上限（MAX_RISE 格 = 288px），和本文件其余部分口径一致。
+//
+// 注意这仍然只是**静态几何**的判据：本文件不模拟阵风、传送带、上涨岩浆这些
+// 会改变弹道的环境力。2-4 就踩过这个坑——一枚大金币几何上完全够得到，实机
+// 却因为它正好落在两条对吹的阵风带里而抓不到。所以放置收集品必须同时跑实机
+// 可达性测试（见 tests/ 与 PLAN.md 的验证记录），审计通过不等于玩家拿得到。
+const PLAYER_JUMP_APEX = MAX_RISE * TILE
 // 敌人出生框（Enemy.js 各子类的 width/height，设计值 × 3）。
 const ENEMY_BOX = {
   mochi: [26 * 3, 22 * 3], gearmochi: [26 * 3, 22 * 3], shellbuddy: [26 * 3, 24 * 3],
@@ -340,11 +349,41 @@ for (const file of readdirSync(MAPS).filter((f) => f.endsWith('.json')).sort()) 
   }
 
   // ---- 11. 金币不许长在实心体里（取代原规则 3——它只看管身、漏了帽沿）----
-  for (const c of d.coins ?? []) {
-    const cb = { l: c.x * TILE + TILE / 2 - COIN_SIZE / 2, r: c.x * TILE + TILE / 2 + COIN_SIZE / 2,
-                 t: c.y * TILE + TILE / 2 - COIN_SIZE / 2, b: c.y * TILE + TILE / 2 + COIN_SIZE / 2 }
-    const inside = boxes.find((o) => !deliberate(o) && hit(cb, o, 4))
-    if (inside) report(lvl, `金币(${c.x},${c.y}) 埋在 ${inside.kind}${at(inside)} 实体里（看得见、吃不到）`)
+  const boxOf = (c, size) => ({
+    l: c.x * TILE + TILE / 2 - size / 2, r: c.x * TILE + TILE / 2 + size / 2,
+    t: c.y * TILE + TILE / 2 - size / 2, b: c.y * TILE + TILE / 2 + size / 2,
+  })
+  for (const [list, size, name] of [[d.coins ?? [], COIN_SIZE, '金币'], [d.bigCoins ?? [], BIG_COIN_SIZE, '大金币']]) {
+    for (const c of list) {
+      const inside = boxes.find((o) => !deliberate(o) && hit(boxOf(c, size), o, 4))
+      if (inside) report(lvl, `${name}(${c.x},${c.y}) 埋在 ${inside.kind}${at(inside)} 实体里（看得见、吃不到）`)
+    }
+  }
+
+  // ---- 14. 大金币：每关正好 3 枚，必须够得着，而且**不能在平地上原地跳就拿到** ----
+  // 最后那条是这个收集品存在的意义：能在主路上顺手蹭到的，那只是一枚普通金币。
+  // 合格的位置必须要求玩家先站上某个非地面的落脚点（平台/管顶/砖/弹簧/宝箱…）。
+  const bigCoins = d.bigCoins ?? []
+  if (bigCoins.length !== BIG_COINS_PER_LEVEL) {
+    report(lvl, `大金币 ${bigCoins.length} 枚，应为 ${BIG_COINS_PER_LEVEL} 枚（选关界面按 ★★★ 显示）`)
+  }
+  for (const c of bigCoins) {
+    const cb = boxOf(c, BIG_COIN_SIZE)
+    // 玩家站在某个面上时身体能覆盖的 y 区间（脚在面上 → 全跳头顶）
+    const canTouch = (o) => {
+      const boost = o.springApex ? o.springApex * TILE : PLAYER_JUMP_APEX
+      if (cb.b < o.t - boost - SMALL || cb.t > o.t) return false
+      const dh = o.t - cb.b
+      if (dh > boost) return false
+      const mx = o.springApex ? SPRING_H_UP * TILE : (dh <= 0 ? H_DOWN * TILE : H_UP * TILE)
+      return Math.max(0, Math.max(cb.l, o.l) - Math.min(cb.r, o.r)) <= mx
+    }
+    const tops = S.map((x) => ({ l: x.x0 * TILE, r: x.x1 * TILE, t: x.top * TILE, kind: x.kind, springApex: x.springApex }))
+    const from = tops.filter(canTouch)
+    if (!from.length) report(lvl, `大金币(${c.x},${c.y}) 够不着：没有任何落脚面能把玩家送到它身上`)
+    else if (from.every((o) => o.kind === 'ground')) {
+      report(lvl, `大金币(${c.x},${c.y}) 在平地原地跳就能拿到——收集品必须要求先站上某个非地面落脚点`)
+    }
   }
 
   // ---- 12. 敌人出生点不许卡在实心体里 ----

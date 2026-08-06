@@ -93,6 +93,11 @@ export class AudioManager {
     this._playSfx(SFX_AUDIO.coin, { startFreq: 988, endFreq: 1568, duration: 0.12, type: 'square', volume: 0.15 })
   }
 
+  /** 大金币：比普通金币更高更长的一声，和满地金币区分开。 */
+  playBigCoin() {
+    this._playSfx(SFX_AUDIO.bigCoin, { startFreq: 784, endFreq: 2093, duration: 0.35, type: 'triangle', volume: 0.2 })
+  }
+
   playPowerUp() {
     this._playSfx(SFX_AUDIO.powerUp, { startFreq: 523, endFreq: 1046, duration: 0.3, type: 'triangle', volume: 0.18 })
   }

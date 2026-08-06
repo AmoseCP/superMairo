@@ -99,3 +99,48 @@ test('跳跃切断值合理：小跳 < 全跳，且仍能跨过 1 格台阶', ()
   // 关卡设计上限是 3 格台阶（见 tools/audit-levels.mjs MAX_RISE），全跳必须留有余量
   assert.ok(holdTiles > 3, `全跳只有 ${holdTiles.toFixed(2)} 格，够不到关卡里的 3 格台阶`)
 })
+
+// --- 5. 连击倍率阶梯 -------------------------------------------------------
+// LEVELS.md 1-4 写了"连击考验点"的设计意图，敌人也照着摆了，但代码里一直没有
+// 连击——每只固定 200 分。这组断言锁住兑现后的阶梯。
+test('连击：不落地连踩的分数按倍率递增，且额外分记在个人账上', async () => {
+  const { ScoreManager, COMBO_MULTIPLIERS } = await import('../src/systems/ScoreManager.js')
+  const sm = new ScoreManager()
+  const got = COMBO_MULTIPLIERS.map((_, i) => sm.addComboKill('p1', i).points)
+  for (let i = 1; i < got.length; i++) {
+    assert.ok(got[i] > got[i - 1], `第 ${i + 1} 只没有比第 ${i} 只更值钱：${got}`)
+  }
+  assert.equal(got[0], 200, '第一只应当是基础击杀分')
+  // 超出倍率表要封顶，不能无限翻倍
+  assert.equal(sm.addComboKill('p1', COMBO_MULTIPLIERS.length + 5).points, got.at(-1))
+  // 连击奖励属于打出它的人，不进队伍公共 bonus
+  assert.equal(sm.bonus, 0)
+  assert.ok(sm.playerScore('p1') > 200 * (got.length + 1))
+  assert.equal(sm.playerScore('p2'), 0)
+})
+
+// --- 6. 设置项的存档兜底 ---------------------------------------------------
+test('设置：缺失/损坏的存档一律退回默认值，未知键被忽略', async () => {
+  const store = new Map()
+  globalThis.localStorage = {
+    getItem: (k) => (store.has(k) ? store.get(k) : null),
+    setItem: (k, v) => store.set(k, String(v)),
+    removeItem: (k) => store.delete(k),
+  }
+  const { SettingsManager, SETTING_DEFS } = await import('../src/systems/SettingsManager.js')
+
+  const fresh = new SettingsManager()
+  for (const def of SETTING_DEFS) assert.equal(fresh.get(def.key), def.default, `${def.key} 默认值不对`)
+
+  store.set('settings', '{"versus":true,')            // 半截 JSON
+  assert.equal(new SettingsManager().get('versus'), false, '损坏存档没有退回默认值')
+
+  store.set('settings', JSON.stringify({ versus: 'yes', 未知键: true }))
+  const coerced = new SettingsManager()
+  assert.equal(coerced.get('versus'), false, '非布尔值应被忽略')
+  assert.equal(coerced.get('未知键'), false, '未知键不该被接受')
+
+  const round = new SettingsManager()
+  round.set('infiniteLives', true)
+  assert.equal(new SettingsManager().get('infiniteLives'), true, '写入后没有持久化')
+})

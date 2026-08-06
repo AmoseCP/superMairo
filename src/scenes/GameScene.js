@@ -13,8 +13,9 @@ import {
 import { Pipe } from '../entities/Pipe.js'
 import { AudioManager } from '../systems/AudioManager.js'
 import { CoopManager } from '../systems/CoopManager.js'
-import { ScoreManager } from '../systems/ScoreManager.js'
+import { ScoreManager, COMBO_MULTIPLIERS } from '../systems/ScoreManager.js'
 import { SaveManager } from '../systems/SaveManager.js'
+import { SettingsManager } from '../systems/SettingsManager.js'
 import { Mochi } from '../entities/enemies/Mochi.js'
 import { ShellBuddy } from '../entities/enemies/ShellBuddy.js'
 import { IceShell } from '../entities/enemies/IceShell.js'
@@ -39,6 +40,7 @@ import { Mushroom } from '../entities/items/Mushroom.js'
 import { FireFlower } from '../entities/items/FireFlower.js'
 import { Star } from '../entities/items/Star.js'
 import { Lantern } from '../entities/items/Lantern.js'
+import { BigCoin } from '../entities/items/BigCoin.js'
 import { DarknessLayer } from '../systems/DarknessLayer.js'
 import { QuestionBlock } from '../entities/QuestionBlock.js'
 import { Brick } from '../entities/Brick.js'
@@ -70,7 +72,7 @@ const ENEMY_TYPES = {
   shyghost: ShyGhost,
   candyslimeking: CandySlimeKing,
 }
-const ITEM_TYPES = { coin: Coin, mushroom: Mushroom, fireflower: FireFlower, star: Star, lantern: Lantern }
+const ITEM_TYPES = { coin: Coin, mushroom: Mushroom, fireflower: FireFlower, star: Star, lantern: Lantern, bigcoin: BigCoin }
 
 // --- Darkness / lantern (2-2, see DarknessLayer + LEVELS2.md) ---
 const LANTERN_DURATION_MS = 12000
@@ -128,6 +130,23 @@ const FIREBALL_SPAWN_OFFSET_PX = 12 * WORLD_SCALE
 // shrink-over-lifetime. 11px (pre-scale) centers it on a Mochi.
 const FIREBALL_SPAWN_ABOVE_FEET_PX = 11 * WORLD_SCALE
 
+// --- 不落地连踩（LEVELS.md 1-4「连击考验点」）---
+// 该关卡设计意图早就写进文档、敌人也照着摆好了（两只 Mochi 紧挨着，鼓励
+// "跳起后连续下踩不落地"），但一直没有实现——每只都固定 200 分，连踩和分开
+// 踩没有任何区别。倍率见 ScoreManager.COMBO_MULTIPLIERS；踩满整张表再多踩
+// 一只直接奖 1UP。
+const COMBO_ONE_UP_AT = COMBO_MULTIPLIERS.length
+const COMBO_FONT_SIZE = `${22 * WORLD_SCALE}px`
+
+// --- 打击感（hitstop + 画面震动，见 _hitstop / _hurtPlayer / 踩敌分支）---
+// hitstop = 命中瞬间把物理冻结几十毫秒。分量很小、成本极低，但它是"踩到了"
+// 和"碰了一下"在体感上的分界线。数值刻意保守：踩敌 55ms 只够让人觉得"实"，
+// 长了会像掉帧；受伤 110ms 更重，配合更强的震动强调这是坏事。
+const HITSTOP_STOMP_MS = 55
+const HITSTOP_HURT_MS = 110
+const SHAKE_STOMP = { duration: 90, intensity: 0.0035 }
+const SHAKE_HURT = { duration: 200, intensity: 0.009 }
+
 // --- Stomp detection / bounce (see _handlePlayerEnemyCollision) ---
 const STOMP_TOLERANCE_PX = 10 * WORLD_SCALE
 const STOMP_BOUNCE_VELOCITY = 320 * WORLD_SCALE
@@ -158,6 +177,10 @@ const PLATFORM_CARRY_X_MARGIN_PX = 4 * WORLD_SCALE
 
 // --- P1/P2 stacking tolerance (see onP2Spawned's collider processCallback) ---
 const PLAYER_STACK_TOLERANCE_PX = 10 * WORLD_SCALE
+
+// --- 每关大金币（见 entities/items/BigCoin.js + _loadBigCoins）---
+const BIG_COIN_POINTS = 1000
+const BIG_COIN_TOAST_FONT_SIZE = `${20 * WORLD_SCALE}px`
 
 // --- Extra-life-per-coin-milestone (see _handlePlayerItemOverlap) ---
 const COINS_PER_EXTRA_LIFE = 100
@@ -265,6 +288,10 @@ export class GameScene extends Phaser.Scene {
       this._addBackgroundClouds(worldWidth)
     }
 
+    // 先于所有实体装配——_loadBigCoins 要同步读取"这一关哪几枚已经拿过"。
+    this.saveManager = new SaveManager()
+    this.settings = new SettingsManager()
+
     this.groundGroup = this.physics.add.staticGroup()
     for (const span of level.groundSpans) {
       this._addGroundSpan(span.fromTile, span.toTile, span.tileY)
@@ -285,6 +312,7 @@ export class GameScene extends Phaser.Scene {
     for (const { x, y } of level.lanterns ?? []) {
       this._spawnItem('lantern', x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
     }
+    this._loadBigCoins(level.bigCoins ?? [])
     this.darkness = level.darkness ? new DarknessLayer(this, level.darkness) : null
     this._loadConveyors(level.conveyors ?? [], level.conveyorSwitches ?? [])
     this.flameJets = (level.flameJets ?? []).map((cfg) => new FlameJet(this, cfg))
@@ -340,7 +368,11 @@ export class GameScene extends Phaser.Scene {
 
     this.startTime = this.time.now
     this.scoreManager = new ScoreManager()
-    this.saveManager = new SaveManager()
+    // 本关历史最佳用时，供 HUD 实时对照（异步取回，取不到就不显示对照）。
+    this.bestTimeMs = null
+    this.saveManager.getBestByLevel(this.levelId).then((best) => {
+      if (best?.bestTimeMs > 0) this.bestTimeMs = best.bestTimeMs
+    })
 
     const audioManager = new AudioManager(this)
     this.audioManager = audioManager
@@ -387,6 +419,7 @@ export class GameScene extends Phaser.Scene {
       onFireRequested: (player) => this._spawnFireball(player),
       onGameOver: () => this._onGameOver(),
       onRespawn: () => this.risingLava?.resetToCheckpoint(this.checkpointManager?.reachedIndex ?? -1),
+      infiniteLives: this.settings.get('infiniteLives'),
     })
     this._wirePlayerCollisions(this.coop.p1)
     if (this.priorForms?.p1) this.coop.p1.applyForm(this.priorForms.p1)
@@ -839,7 +872,7 @@ export class GameScene extends Phaser.Scene {
     const who = playerRect === this.coop.p1.rect ? 'p1' : 'p2'
     shot.destroy()
     if (player.isStarActive()) return
-    if (!player.isHitInvincible() && player.takeHit()) this.coop.handlePlayerDown(who)
+    this._hurtPlayer(player, who)
   }
 
   /** 传送带对"站在带面上"的玩家/敌人/道具附加位移；开关踩住则全部暂停。 */
@@ -1155,7 +1188,7 @@ export class GameScene extends Phaser.Scene {
       const pb = player.rect.getBounds()
       if (pb.right > b.left && pb.left < b.right && pb.bottom > b.top && pb.top < b.bottom) {
         player._pipeTrapCooldownUntil = now + PIPE_TRAP_DAMAGE_COOLDOWN_MS
-        if (!player.isHitInvincible() && player.takeHit()) this.coop.handlePlayerDown(who)
+        this._hurtPlayer(player, who)
         return
       }
     }
@@ -1286,7 +1319,7 @@ export class GameScene extends Phaser.Scene {
       const overlaps = pb.right > b.left && pb.left < b.right && pb.bottom > b.top && pb.top < b.bottom
       if (!overlaps) continue
       player._pipeTrapCooldownUntil = now + PIPE_TRAP_DAMAGE_COOLDOWN_MS
-      if (!player.isHitInvincible() && player.takeHit()) this.coop.handlePlayerDown(who)
+      this._hurtPlayer(player, who)
       return
     }
   }
@@ -1424,15 +1457,42 @@ export class GameScene extends Phaser.Scene {
     })
   }
 
-  _spawnItem(type, x, y) {
+  _spawnItem(type, x, y, opts) {
     const ItemClass = ITEM_TYPES[type]
-    if (!ItemClass) return
-    const item = new ItemClass(this, x, y)
+    if (!ItemClass) return null
+    const item = new ItemClass(this, x, y, opts)
     this.items.push(item)
     this.itemsGroup.add(item.rect)
     // Group membership resets allowGravity to the group default on add —
     // restore each item's own setting (coin/fire flower float, mushroom/star fall).
     item.body.setAllowGravity(item.allowGravity)
+    return item
+  }
+
+  /**
+   * 每关 3 枚大金币（LEVELS.md「每关收集品」）。收集状态按关卡持久化，所以
+   * 这里要同步问一次存档：已经拿过的不重新生成为可拾取物，而是留一个暗色
+   * 幽灵——重玩时既能看见"这里有一枚"，又不能重复刷分。
+   */
+  _loadBigCoins(bigCoinData) {
+    this.bigCoinTotal = bigCoinData.length
+    this.bigCoinsCollected = this.saveManager.getCollectedBigCoins(this.levelId)
+    bigCoinData.forEach(({ x, y }, index) => {
+      const coin = this._spawnItem('bigcoin', x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, { index })
+      if (coin && this.bigCoinsCollected.has(index)) coin.markAlreadyCollected()
+    })
+  }
+
+  /** 大金币入手：记存档 + 计分 + 头顶提示当前进度。 */
+  _collectBigCoin(player, who, coin) {
+    if (this.bigCoinsCollected.has(coin.index)) return
+    this.bigCoinsCollected.add(coin.index)
+    this.saveManager.markBigCoinCollected(this.levelId, coin.index)
+    this.scoreManager.addBonus(BIG_COIN_POINTS)
+    this.audioManager?.playBigCoin?.()
+    this._floatText(coin.rect.x, coin.rect.y, `★ 大金币 ${this.bigCoinsCollected.size}/${this.bigCoinTotal}`, {
+      fontSize: BIG_COIN_TOAST_FONT_SIZE, color: '#ffd34d', stroke: '#6b4a00', duration: 1100,
+    })
   }
 
   _spawnFireball(player) {
@@ -1513,11 +1573,12 @@ export class GameScene extends Phaser.Scene {
       player.body.setVelocityY(-STOMP_BOUNCE_VELOCITY)
       player.jumpCutArmed = false // same reason as the spring: not the player's own jump
       this.audioManager?.playStomp()
+      this._impact(HITSTOP_STOMP_MS, SHAKE_STOMP)
       // ShellBuddy stomps just change state (tuck in / kick) without dying —
       // only award kill score when the stomp actually finished it off. A
       // kicked shell records its kicker (see ShellBuddy._kick) so a later
       // chain kill still credits this player, not this stomp itself.
-      if (enemy.dead) this.scoreManager.addKill(who)
+      if (enemy.dead) this._awardStompKill(player, who, enemyRect.x, enemyRect.y)
       return
     }
 
@@ -1526,8 +1587,32 @@ export class GameScene extends Phaser.Scene {
     if (player.isStarActive()) {
       enemy.onHitByShell()
       this.scoreManager.addKill(who)
-    } else if (!player.isHitInvincible() && player.takeHit()) {
-      this.coop.handlePlayerDown(who)
+    } else {
+      this._hurtPlayer(player, who)
+    }
+  }
+
+  /**
+   * 一次成功的踩杀：连击计数 +1 并按倍率给分。计数由 _resetGroundedCombos()
+   * 在玩家落地的那一帧清零，所以"不落地"才是连下去的唯一条件。
+   */
+  _awardStompKill(player, who, x, y) {
+    const combo = player.stompCombo ?? 0
+    const { points, mult } = this.scoreManager.addComboKill(who, combo)
+    player.stompCombo = combo + 1
+    if (combo === 0) {
+      this._floatText(x, y, `+${points}`, { fontSize: COMBO_FONT_SIZE, color: '#ffffff', stroke: '#333333', rise: ONE_UP_RISE_PX * 0.6, duration: 600 })
+    } else {
+      this._floatText(x, y, `${combo + 1} 连击！ +${points}（×${mult}）`, { fontSize: COMBO_FONT_SIZE, color: '#ffd34d' })
+    }
+    // 踩满整张倍率表之后每多踩一只都给一条命——这是连击的天花板奖励。
+    if (player.stompCombo > COMBO_ONE_UP_AT) this._award1Up(player)
+  }
+
+  /** 落地即断连——连击的全部难度就在"不许落地"。 */
+  _resetGroundedCombos(players) {
+    for (const p of players) {
+      if (p.body.onFloor() || p._ridingPlatform) p.stompCombo = 0
     }
   }
 
@@ -1544,8 +1629,8 @@ export class GameScene extends Phaser.Scene {
       // only credit the kill if it actually died, same guard as every other
       // ranged/star-kill path in this file.
       if (ghost.dead) this.scoreManager.addKill(who)
-    } else if (!player.isHitInvincible() && player.takeHit()) {
-      this.coop.handlePlayerDown(who)
+    } else {
+      this._hurtPlayer(player, who)
     }
   }
 
@@ -1570,6 +1655,9 @@ export class GameScene extends Phaser.Scene {
       case 'star':
         player.startStar()
         this.audioManager?.playPowerUp()
+        break
+      case 'bigcoin':
+        this._collectBigCoin(player, who, item)
         break
       case 'lantern': {
         player.lanternUntil = this.time.now + LANTERN_DURATION_MS
@@ -1619,27 +1707,61 @@ export class GameScene extends Phaser.Scene {
     })
   }
 
+  /**
+   * 玩家受到一次伤害。这段判定原本一字不差地散在 5 个地方（敌人侧碰、幽灵、
+   * 炮弹、管道夹子、喷火柱），收拢成一个入口后，打击反馈只要加一次。
+   */
+  _hurtPlayer(player, who) {
+    if (player.isHitInvincible()) return
+    this._impact(HITSTOP_HURT_MS, SHAKE_HURT)
+    if (player.takeHit()) this.coop.handlePlayerDown(who)
+  }
+
+  /** 打击反馈（卡帧 + 震动）。"减弱画面效果"设置会整体关掉它。 */
+  _impact(hitstopMs, shake) {
+    if (this.settings.get('reduceMotion')) return
+    this._hitstop(hitstopMs)
+    this.cameras.main.shake(shake.duration, shake.intensity)
+  }
+
+  /**
+   * 冻结物理若干毫秒（画面照常渲染）。用 world.pause() 而不是改 timeScale：
+   * 后者会把动画和计时一起拖慢，看起来像卡顿而不是打击感。重入时不叠加，
+   * 免得连踩把游戏冻住。
+   *
+   * 解冻放在 update() 里按帧时间判断，而不是 time.delayedCall——延时回调挂在
+   * 场景 Clock 上，Clock 一旦停走（标签页失焦被节流、场景被 pause），物理就
+   * 会永远停在暂停态；按帧检查用的是 update 自己收到的 time，不存在这个洞。
+   */
+  _hitstop(ms) {
+    if (this._hitstopUntil && this.time.now < this._hitstopUntil) return
+    this._hitstopUntil = this.time.now + ms
+    this.physics.world.pause()
+  }
+
+  /** 每帧检查 hitstop 是否到期（见 _hitstop 里为什么不用 delayedCall）。 */
+  _updateHitstop(time) {
+    if (!this._hitstopUntil) return
+    if (time < this._hitstopUntil) return
+    this._hitstopUntil = 0
+    this.physics.world.resume()
+  }
+
+  /** 头顶飘字：上浮淡出。大金币、连击、1UP 共用同一套表现。 */
+  _floatText(x, y, message, { color = '#ffe066', stroke = '#7a4a00', fontSize = ONE_UP_FONT_SIZE, rise = ONE_UP_RISE_PX, duration = 900 } = {}) {
+    const text = this.add
+      .text(x, y, message, { fontFamily: 'sans-serif', fontSize, color, stroke, strokeThickness: 4 })
+      .setOrigin(0.5)
+      .setDepth(1500)
+    this.tweens.add({ targets: text, y: text.y - rise, alpha: 0, duration, onComplete: () => text.destroy() })
+    return text
+  }
+
   /** Every COINS_PER_EXTRA_LIFE coins collected — classic "1UP" floating text + a shared bonus life. */
   _award1Up(player) {
     this.coop.addExtraLife()
     this.audioManager?.play1Up()
-    const text = this.add
-      .text(player.rect.x, player.rect.y - player.rect.height / 2, '★1UP', {
-        fontFamily: 'sans-serif',
-        fontSize: ONE_UP_FONT_SIZE,
-        color: '#ffe066',
-        stroke: '#7a4a00',
-        strokeThickness: 4,
-      })
-      .setOrigin(0.5)
-      .setDepth(1500)
-    this.tweens.add({
-      targets: text,
-      y: text.y - ONE_UP_RISE_PX,
-      alpha: 0,
-      duration: 900,
-      onComplete: () => text.destroy(),
-    })
+    this._floatText(player.rect.x, player.rect.y - player.rect.height / 2, '★1UP')
   }
 
   _handlePlayerBlockCollision(playerRect, blockRect) {
@@ -1670,6 +1792,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   update(time, delta) {
+    this._updateHitstop(time)
     if (this.levelComplete) {
       // Require a RELEASE-then-press to advance. Two input-bleed bugs hide
       // here otherwise: (1) the jump that carried the player onto the flag
@@ -1719,6 +1842,7 @@ export class GameScene extends Phaser.Scene {
       this.coop.p2Joined && !this.coop.p2Bubble ? this.coop.p2 : null,
     ].filter(Boolean)
     this._updateSwitchBlocks(time, activePlayers, joinedPlayers)
+    this._resetGroundedCombos(activePlayers)
     for (const player of activePlayers) {
       this._checkPipeEntry(player)
       this._checkPipeTraps(player, this._whoFor(player))
@@ -1844,9 +1968,15 @@ export class GameScene extends Phaser.Scene {
     }
     const p1 = sm.perPlayer.p1
     const p2 = sm.perPlayer.p2
+    const s1 = sm.playerScore('p1')
+    const s2 = sm.playerScore('p2')
+    // 竞争模式（设置项）：同一关照常打，但结算时把两人分开比个胜负。
+    const verdict = this.settings.get('versus')
+      ? `\n🏁 ${s1 === s2 ? '平局！' : `${s1 > s2 ? 'P1 🐰' : 'P2 🐱'} 获胜（领先 ${Math.abs(s1 - s2)} 分）`}`
+      : ''
     return (
-      `P1 本关得分：${sm.playerScore('p1')}（🪙${p1.coins} ⚔${p1.kills}）　` +
-      `P2 本关得分：${sm.playerScore('p2')}（🪙${p2.coins} ⚔${p2.kills}）\n` +
+      `P1 本关得分：${s1}（🪙${p1.coins} ⚔${p1.kills}）　` +
+      `P2 本关得分：${s2}（🪙${p2.coins} ⚔${p2.kills}）${verdict}\n` +
       `团队总得分：${total}（本关 +${sm.score}，含限时奖励 +${timeBonus}、旗杆高度奖励 +${heightBonus}）　` +
       `金币：${this.totalCoins}（本关 +${sm.coins}）　用时：${seconds.toFixed(1)}s`
     )
@@ -1885,9 +2015,10 @@ export class GameScene extends Phaser.Scene {
     this.saveManager.unlockLevel(this.levelId)
     this.saveManager
       .recordLevelResult({ levelId: this.levelId, score, coins, timeMs, players: this.coop.p2Joined ? 2 : 1 })
-      .then(({ isNewBest }) => {
-        if (isNewBest) {
-          this.levelCompleteText.setText(`🎉 ${this.level.name} 通关！\n${scoreSummary}\n✨ 打破历史最佳！\n${retryHint}`)
+      .then(({ isNewBest, isNewBestTime }) => {
+        const banners = [isNewBest && '✨ 打破最高分纪录！', isNewBestTime && '⚡ 打破最速纪录！'].filter(Boolean)
+        if (banners.length) {
+          this.levelCompleteText.setText(`🎉 ${this.level.name} 通关！\n${scoreSummary}\n${banners.join('　')}\n${retryHint}`)
         }
       })
   }

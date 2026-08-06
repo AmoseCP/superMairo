@@ -39,6 +39,7 @@ export class CoopManager {
       checkpointManager,
       touchState,
       autoScroll,
+      infiniteLives = false,
     },
   ) {
     this.scene = scene
@@ -52,6 +53,8 @@ export class CoopManager {
     this.onFireRequested = onFireRequested
     this.onRespawn = onRespawn
     this.checkpointManager = checkpointManager
+    // 设置项（SettingsManager）：开启后掉命只回检查点，不消耗共享生命。
+    this.infiniteLives = infiniteLives
     // 3-3 强制卷轴（LEVELS3.md）：{speedPx（已含 WORLD_SCALE）, startX, endX}
     // 均已是真实像素单位（GameScene 转换过）。_scrollX===null 表示还没进入
     // 卷轴区；一旦任意存活玩家越过 startX 就锁定并开始匀速推进，直到越过
@@ -230,10 +233,14 @@ export class CoopManager {
   }
 
   _loseLifeAndRespawn(who) {
-    this.sharedLives -= 1
-    if (this.sharedLives <= 0) {
-      this._gameOver()
-      return
+    // 无限生命（设置项）：照常回检查点、照常重置形态，只是不扣命。做成"不扣"
+    // 而不是"扣完再补"，这样 HUD 上的心一直是满的，不会闪一下。
+    if (!this.infiniteLives) {
+      this.sharedLives -= 1
+      if (this.sharedLives <= 0) {
+        this._gameOver()
+        return
+      }
     }
     // 卷轴区死亡回卷轴起点——respawn 点本来就是 startTile 前的安全检查点，
     // 这里只需要把镜头的卷轴状态也一并复位，否则玩家复活在起点但镜头还

@@ -48,19 +48,29 @@ export class SaveManager {
         const bestStore = tx.objectStore('bestByLevel')
         const getReq = bestStore.get(levelId)
         let isNewBest = false
+        let isNewBestTime = false
         getReq.onsuccess = () => {
           const current = getReq.result
           isNewBest = !current || score > current.bestScore
-          if (isNewBest) {
-            bestStore.put({ levelId, bestScore: score, bestTimeMs: timeMs, achievedAt: playedAt })
+          // 最佳用时**独立**记录。原来它只是"最高分那一把顺带用了多久"，
+          // 于是一把稳扎稳打的高分会把真正的最速纪录覆盖掉，速通挑战根本
+          // 无从谈起（而且这个字段此前从没有任何界面读过，没人发现）。
+          isNewBestTime = !current || !(current.bestTimeMs > 0) || timeMs < current.bestTimeMs
+          if (isNewBest || isNewBestTime) {
+            bestStore.put({
+              levelId,
+              bestScore: isNewBest ? score : current.bestScore,
+              bestTimeMs: isNewBestTime ? timeMs : current.bestTimeMs,
+              achievedAt: playedAt,
+            })
           }
         }
-        tx.oncomplete = () => resolve({ isNewBest })
+        tx.oncomplete = () => resolve({ isNewBest, isNewBestTime })
         tx.onerror = () => reject(tx.error)
       })
     } catch (err) {
       console.warn('SaveManager.recordLevelResult failed (storage unavailable?)', err)
-      return { isNewBest: false, error: err }
+      return { isNewBest: false, isNewBestTime: false, error: err }
     }
   }
 
@@ -92,6 +102,45 @@ export class SaveManager {
       localStorage.setItem('unlockedLevels', JSON.stringify([...unlocked]))
     } catch {
       // localStorage unavailable (private mode / quota) — non-fatal, just no persistence.
+    }
+  }
+
+  // --- 每关大金币的收集状态（见 entities/items/BigCoin.js）------------------
+  // 存 localStorage 而不是 IndexedDB：这是一份极小的标志位集合（15 关 × 3 位），
+  // 和 unlockedLevels 同类。更重要的是它必须能**同步**读到——GameScene.create()
+  // 是同步搭场景的，异步读会让大金币先冒出来再消失。IndexedDB 留给分数历史那种
+  // 真正需要结构化查询的数据。
+  //
+  // 形状：{ "1-1": [0, 2], "2-3": [1] }，数组里是 bigCoins 数组的下标。
+
+  /** 整份收集表；选关界面用它一次算出所有关卡的 ★ 数。 */
+  getBigCoinRecord() {
+    try {
+      const raw = JSON.parse(localStorage.getItem('bigCoins') ?? '{}')
+      return raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {}
+    } catch {
+      return {}
+    }
+  }
+
+  /** 某一关已收集的大金币下标（Set，供 GameScene 同步查询）。 */
+  getCollectedBigCoins(levelId) {
+    const list = this.getBigCoinRecord()[levelId]
+    return new Set(Array.isArray(list) ? list : [])
+  }
+
+  /** 记下一枚。返回 true 表示这是新收集的（用于决定要不要播提示）。 */
+  markBigCoinCollected(levelId, index) {
+    try {
+      const record = this.getBigCoinRecord()
+      const set = new Set(record[levelId] ?? [])
+      if (set.has(index)) return false
+      set.add(index)
+      record[levelId] = [...set].sort((a, b) => a - b)
+      localStorage.setItem('bigCoins', JSON.stringify(record))
+      return true
+    } catch {
+      return false // localStorage 不可用：本次仍然计分，只是不持久化
     }
   }
 }

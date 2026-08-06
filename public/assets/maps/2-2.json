@@ -1,7 +1,7 @@
 {
   "id": "2-2",
   "name": "萤光洞窟",
-  "widthTiles": 220,
+  "widthTiles": 232,
   "heightTiles": 14,
   "spawnTile": {
     "x": 1,
@@ -10,7 +10,8 @@
   "darkness": {
     "alpha": 0.92,
     "lightRadiusTiles": 4.5,
-    "fromTile": 8
+    "fromTile": 8,
+    "toTile": null
   },
   "groundSpans": [
     {
@@ -35,12 +36,12 @@
     },
     {
       "fromTile": 134,
-      "toTile": 180,
+      "toTile": 192,
       "tileY": 12
     },
     {
-      "fromTile": 186,
-      "toTile": 220,
+      "fromTile": 198,
+      "toTile": 232,
       "tileY": 12
     }
   ],
@@ -140,8 +141,8 @@
   ],
   "waterZones": [
     {
-      "fromTile": 186,
-      "toTile": 220
+      "fromTile": 198,
+      "toTile": 232
     }
   ],
   "pipes": [
@@ -153,28 +154,28 @@
     },
     {
       "id": "trap2-2b",
-      "x": 152,
+      "x": 156,
       "groundTileY": 12,
       "hasTrap": true,
       "trapPhaseOffsetMs": 1300
     },
     {
       "id": "trap2-2c",
-      "x": 160,
+      "x": 168,
       "groundTileY": 12,
       "hasTrap": true,
       "trapPhaseOffsetMs": 2600
     },
     {
       "id": "entry2-2",
-      "x": 168,
+      "x": 180,
       "groundTileY": 12,
       "enterable": true,
       "warpToId": "uw2-2"
     },
     {
       "id": "uw2-2",
-      "x": 190,
+      "x": 202,
       "groundTileY": 12,
       "enterable": true,
       "warpToId": "entry2-2"
@@ -290,31 +291,15 @@
       "y": 9
     },
     {
-      "x": 154,
+      "x": 158,
       "y": 9
     },
     {
-      "x": 155,
+      "x": 159,
       "y": 9
     },
     {
-      "x": 156,
-      "y": 9
-    },
-    {
-      "x": 188,
-      "y": 9
-    },
-    {
-      "x": 191,
-      "y": 9
-    },
-    {
-      "x": 194,
-      "y": 9
-    },
-    {
-      "x": 197,
+      "x": 160,
       "y": 9
     },
     {
@@ -322,7 +307,7 @@
       "y": 9
     },
     {
-      "x": 203,
+      "x": 204,
       "y": 9
     },
     {
@@ -342,7 +327,23 @@
       "y": 9
     },
     {
-      "x": 179,
+      "x": 218,
+      "y": 9
+    },
+    {
+      "x": 221,
+      "y": 9
+    },
+    {
+      "x": 224,
+      "y": 9
+    },
+    {
+      "x": 227,
+      "y": 9
+    },
+    {
+      "x": 191,
       "y": 10
     }
   ],
@@ -395,11 +396,11 @@
       "coin": true
     },
     {
-      "x": 163,
+      "x": 171,
       "y": 9
     },
     {
-      "x": 164,
+      "x": 172,
       "y": 9
     }
   ],
@@ -426,7 +427,7 @@
     }
   ],
   "flagpoleTile": {
-    "x": 175,
+    "x": 187,
     "y": 12
   }
 }

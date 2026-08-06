@@ -1,7 +1,7 @@
 {
   "id": "2-1",
   "name": "雪晶滑原",
-  "widthTiles": 240,
+  "widthTiles": 252,
   "heightTiles": 12,
   "spawnTile": {
     "x": 1,
@@ -20,12 +20,12 @@
     },
     {
       "fromTile": 62,
-      "toTile": 197,
+      "toTile": 209,
       "tileY": 10
     },
     {
-      "fromTile": 204,
-      "toTile": 240,
+      "fromTile": 216,
+      "toTile": 252,
       "tileY": 10
     }
   ],
@@ -88,8 +88,8 @@
       "tileY": 10
     },
     {
-      "fromTile": 208,
-      "toTile": 232,
+      "fromTile": 220,
+      "toTile": 244,
       "tileY": 10
     }
   ],
@@ -156,14 +156,14 @@
     },
     {
       "type": "mochi",
-      "x": 178,
+      "x": 182,
       "y": 9
     }
   ],
   "waterZones": [
     {
-      "fromTile": 204,
-      "toTile": 240
+      "fromTile": 216,
+      "toTile": 252
     }
   ],
   "pipes": [
@@ -175,28 +175,28 @@
     },
     {
       "id": "trap2-1b",
-      "x": 174,
+      "x": 178,
       "groundTileY": 10,
       "hasTrap": true,
       "trapPhaseOffsetMs": 1300
     },
     {
       "id": "trap2-1c",
-      "x": 182,
+      "x": 190,
       "groundTileY": 10,
       "hasTrap": true,
       "trapPhaseOffsetMs": 2600
     },
     {
       "id": "entry2-1",
-      "x": 190,
+      "x": 202,
       "groundTileY": 10,
       "enterable": true,
       "warpToId": "uw2-1"
     },
     {
       "id": "uw2-1",
-      "x": 208,
+      "x": 220,
       "groundTileY": 10,
       "enterable": true,
       "warpToId": "entry2-1"
@@ -300,10 +300,6 @@
       "y": 7
     },
     {
-      "x": 125,
-      "y": 7
-    },
-    {
       "x": 129,
       "y": 7
     },
@@ -324,44 +320,28 @@
       "y": 7
     },
     {
-      "x": 177,
+      "x": 181,
       "y": 7
     },
     {
-      "x": 178,
+      "x": 182,
       "y": 7
     },
     {
-      "x": 179,
+      "x": 183,
       "y": 7
     },
     {
-      "x": 185,
+      "x": 193,
       "y": 7
     },
     {
-      "x": 186,
+      "x": 194,
       "y": 7
     },
     {
-      "x": 187,
+      "x": 195,
       "y": 7
-    },
-    {
-      "x": 210,
-      "y": 7
-    },
-    {
-      "x": 213,
-      "y": 6
-    },
-    {
-      "x": 216,
-      "y": 7
-    },
-    {
-      "x": 219,
-      "y": 6
     },
     {
       "x": 222,
@@ -377,6 +357,22 @@
     },
     {
       "x": 231,
+      "y": 6
+    },
+    {
+      "x": 234,
+      "y": 7
+    },
+    {
+      "x": 237,
+      "y": 6
+    },
+    {
+      "x": 240,
+      "y": 7
+    },
+    {
+      "x": 243,
       "y": 6
     }
   ],
@@ -466,7 +462,7 @@
   ],
   "timedDoors": [],
   "flagpoleTile": {
-    "x": 195,
+    "x": 207,
     "y": 10
   }
 }

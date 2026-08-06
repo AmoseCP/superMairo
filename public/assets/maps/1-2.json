@@ -1,7 +1,7 @@
 {
   "id": "1-2",
   "name": "蘑菇森林",
-  "widthTiles": 210,
+  "widthTiles": 216,
   "heightTiles": 12,
   "spawnTile": {
     "x": 1,
@@ -20,12 +20,12 @@
     },
     {
       "fromTile": 133,
-      "toTile": 166,
+      "toTile": 172,
       "tileY": 10
     },
     {
-      "fromTile": 177,
-      "toTile": 207,
+      "fromTile": 183,
+      "toTile": 213,
       "tileY": 10
     }
   ],
@@ -51,8 +51,8 @@
       "tileY": 6
     },
     {
-      "fromTile": 189,
-      "toTile": 193,
+      "fromTile": 195,
+      "toTile": 199,
       "tileY": 7
     }
   ],
@@ -149,7 +149,7 @@
     },
     {
       "type": "mochi",
-      "x": 199,
+      "x": 205,
       "y": 9
     },
     {
@@ -159,14 +159,14 @@
     },
     {
       "type": "shellbuddy",
-      "x": 151,
+      "x": 154,
       "y": 9
     }
   ],
   "waterZones": [
     {
-      "fromTile": 177,
-      "toTile": 207
+      "fromTile": 183,
+      "toTile": 213
     }
   ],
   "pipes": [
@@ -178,21 +178,21 @@
     },
     {
       "id": "trap1-2b",
-      "x": 147,
+      "x": 150,
       "groundTileY": 10,
       "hasTrap": true,
       "trapPhaseOffsetMs": 2050
     },
     {
       "id": "entry1-2",
-      "x": 156,
+      "x": 162,
       "groundTileY": 10,
       "enterable": true,
       "warpToId": "uw1-2"
     },
     {
       "id": "uw1-2",
-      "x": 182,
+      "x": 188,
       "groundTileY": 10,
       "enterable": true,
       "warpToId": "entry1-2"
@@ -296,35 +296,35 @@
       "y": 9
     },
     {
-      "x": 185,
-      "y": 9
-    },
-    {
-      "x": 186,
-      "y": 9
-    },
-    {
-      "x": 187,
-      "y": 9
-    },
-    {
-      "x": 190,
-      "y": 6
-    },
-    {
       "x": 191,
-      "y": 6
+      "y": 9
     },
     {
       "x": 192,
-      "y": 6
-    },
-    {
-      "x": 203,
       "y": 9
     },
     {
-      "x": 204,
+      "x": 193,
+      "y": 9
+    },
+    {
+      "x": 196,
+      "y": 6
+    },
+    {
+      "x": 197,
+      "y": 6
+    },
+    {
+      "x": 198,
+      "y": 6
+    },
+    {
+      "x": 209,
+      "y": 9
+    },
+    {
+      "x": 210,
       "y": 9
     },
     {
@@ -340,15 +340,15 @@
       "y": 7
     },
     {
-      "x": 150,
+      "x": 153,
       "y": 7
     },
     {
-      "x": 151,
+      "x": 154,
       "y": 7
     },
     {
-      "x": 152,
+      "x": 155,
       "y": 7
     }
   ],
@@ -430,7 +430,7 @@
     }
   ],
   "flagpoleTile": {
-    "x": 162,
+    "x": 168,
     "y": 10
   }
 }

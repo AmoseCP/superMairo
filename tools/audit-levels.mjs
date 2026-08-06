@@ -28,6 +28,16 @@
  *     "弹簧只弹了预期一半的高度"，其实是被一个自己完全没意识到的邻居
  *     平台顶角刮到了。这个净空要求覆盖关卡里**所有**弹簧，不能只检查
  *     每个弹簧自己名下的承接平台。
+ * 10. 两个实心体不许重叠（按真实像素盒，含管道帽沿的左右外探）
+ * 11. 金币不许长在任何实心体里（取代原规则 3：它只看管身、漏掉了帽沿，
+ *     也完全没管砖块/地板/移动平台）
+ * 12. 敌人出生点不许卡在实心体里
+ * 13. 砖块/问号块必须真的顶得到（有落脚面 + 底面下方空气柱通畅），
+ *     顶面之上还要有一个小形态玩家的站立净空
+ *
+ *  规则 10~13 是"看得见、碰不到"这一类玩家投诉的根因：规则 1~9 全部在
+ *  格子索引上比较，看不见亚格差异（帽沿外探 30px、宝箱只有 84×66、方块
+ *  底面正好压在平台顶面上……），所以这些问题一路漏到了玩家手里。
  *
  * 用法：node tools/audit-levels.mjs   （或 npm run audit）
  */
@@ -43,6 +53,24 @@ const H_UP = 4, H_DOWN = 7 // 跳升/下落允许的水平间隙（格）
 // 与 src/entities/Spring.js 的 SIZES 常量保持同步（弹跳高度，格）。
 const SPRING_APEX_TILES = { small: 5, big: 8 }
 const SPRING_H_UP = 8 // 弹簧滞空时间长，水平可控范围也放宽
+
+// --- 规则 10~13 用的实体像素尺寸（必须和 src/entities/* 保持同步）---
+// 这些是"格子索引"算不出来的部分：管道帽沿比管身左右各宽 30px、弹簧比 1 格宽、
+// 宝箱只有 84×66 而不是整格……规则 1~9 全部按格子索引比较，正是这一点让
+// "看得见、碰不到 / 卡在实体里" 这一整类 bug 从审计里漏了过去。
+const PIPE_COLLAR_H = 24 * 3      // Pipe.js COLLAR_HEIGHT
+const PIPE_COLLAR_OVERHANG = 10 * 3 // Pipe.js COLLAR_OVERHANG（左右各多出这么多）
+const SPRING_W = 56 * 3, SPRING_H = 12 * 3 // Spring.js SPRING_WIDTH / SPRING_HEIGHT
+const CHEST_W = 28 * 3, CHEST_H = 22 * 3   // DualSwitchChest.js CHEST_WIDTH / CHEST_HEIGHT
+const TURRET_W = 40 * 3, TURRET_H = 44 * 3 // Turret.js WIDTH / HEIGHT
+const COIN_SIZE = 18 * 3          // items/Coin.js 的碰撞体边长
+const PLAYER_JUMP_APEX = (520 * 3) ** 2 / (2 * 1200 * 3) // ≈338px，v²/2g（constants.js）
+// 敌人出生框（Enemy.js 各子类的 width/height，设计值 × 3）。
+const ENEMY_BOX = {
+  mochi: [26 * 3, 22 * 3], gearmochi: [26 * 3, 22 * 3], shellbuddy: [26 * 3, 24 * 3],
+  iceshell: [26 * 3, 24 * 3], hopper: [28 * 3, 24 * 3], bat: [30 * 3, 20 * 3],
+  shyghost: [32 * 3, 32 * 3], candyslimeking: [44 * 3, 40 * 3],
+}
 
 let issues = 0
 const report = (lvl, msg) => { console.log(`  ✗ ${lvl}: ${msg}`); issues++ }
@@ -265,7 +293,99 @@ for (const file of readdirSync(MAPS).filter((f) => f.endsWith('.json')).sort()) 
     }
   }
 
-  console.log(`${lvl}: 表面 ${S.length} 个，全部审计完成`)
+  // ---- 10~13. 像素级实体几何（见文件头 PIXEL_BOXES 一节的常量）----
+  // 规则 1~9 全部用格子索引比较，看不见"帽沿多出 30px""宝箱只有 84×66"这类
+  // 亚格差异，于是漏掉了一整类玩家实际会遇到的 bug：方块半埋进管道、金币整枚
+  // 长在砖块／地板里、敌人出生在管道实体内、方块贴着平台顶面永远顶不到。
+  // 下面按真实像素盒重跑一遍。
+  const boxes = [] // {kind, l, r, t, b}
+  const box = (kind, l, t, w, h) => boxes.push({ kind, l, r: l + w, t, b: t + h })
+  for (const s of d.groundSpans ?? []) box('ground', s.fromTile * TILE, s.tileY * TILE, (s.toTile - s.fromTile) * TILE, TILE)
+  for (const s of d.platforms ?? []) box('platform', s.fromTile * TILE, s.tileY * TILE, (s.toTile - s.fromTile) * TILE, TILE)
+  for (const p of d.pipes ?? []) {
+    const w = (p.widthTiles ?? 2) * TILE, h = (p.heightTiles ?? 3) * TILE
+    const cx = p.x * TILE + TILE / 2, groundY = p.groundTileY * TILE
+    box('pipe帽沿', cx - (w + PIPE_COLLAR_OVERHANG * 2) / 2, groundY - h, w + PIPE_COLLAR_OVERHANG * 2, PIPE_COLLAR_H)
+    box('pipe管身', cx - w / 2, groundY - h + PIPE_COLLAR_H, w, h - PIPE_COLLAR_H)
+  }
+  for (const b of d.bricks ?? []) box('brick', b.x * TILE, b.y * TILE, TILE, TILE)
+  for (const q of d.questionBlocks ?? []) box('qblock', q.x * TILE, q.y * TILE, TILE, TILE)
+  for (const c of d.dualSwitchChests ?? [])
+    box('chest', c.chestX * TILE + TILE / 2 - CHEST_W / 2, c.chestY * TILE + TILE / 2 - CHEST_H / 2, CHEST_W, CHEST_H)
+  for (const t of d.turrets ?? []) box('turret', t.x * TILE + TILE / 2 - TURRET_W / 2, t.groundTileY * TILE - TURRET_H, TURRET_W, TURRET_H)
+  for (const sp of d.springs ?? []) box('spring', sp.x * TILE + TILE / 2 - SPRING_W / 2, sp.groundTileY * TILE - SPRING_H, SPRING_W, SPRING_H)
+  for (const c of d.crumblePlatforms ?? []) box('crumble', c.x * TILE, c.y * TILE, (c.widthTiles ?? 3) * TILE, TILE)
+  for (const sb of d.switchBlocks ?? []) box('switchBlock', sb.x * TILE, sb.y * TILE, (sb.widthTiles ?? 1) * TILE, TILE)
+  // 移动平台按"出生位"算——它扫过的行程里和别的实体交错是设计的一部分，
+  // 但静止时和另一个实体重叠就是数据错误。
+  for (const m of d.movingPlatforms ?? []) box('mplat', m.x * TILE, m.y * TILE, (m.widthTiles ?? 3) * TILE, TILE)
+
+  const hit = (a, b, eps = 2) => a.l < b.r - eps && a.r > b.l + eps && a.t < b.b - eps && a.b > b.t + eps
+  const at = (o) => `[${(o.l / TILE).toFixed(1)},${(o.t / TILE).toFixed(1)}]`
+
+  // 红蓝切换方块是唯一"故意和别的东西共处一格"的实体：LEVELS3.md 3-2 明写了
+  // 「红蓝方块盖在部分管口上方（翻转才能站上管口）」和水下调色湖的「金币走廊」，
+  // 也就是把管口/金币埋进方块本来就是玩法——它半数时间 body.enable=false，
+  // 不构成"两个恒实心体互相挤"的那种物理隐患。规则 10/11 因此放行它。
+  const deliberate = (o) => o.kind === 'switchBlock'
+
+  // ---- 10. 两个实心体不许重叠 ----
+  // Arcade 解重叠时会在两个静态体之间反复推挤，轻则视觉上一半埋进去，
+  // 重则直接把玩家漏下去（LEVELS.md §0 已经踩过一次）。
+  for (let i = 0; i < boxes.length; i++) {
+    for (let j = i + 1; j < boxes.length; j++) {
+      if (deliberate(boxes[i]) || deliberate(boxes[j])) continue
+      if (hit(boxes[i], boxes[j])) report(lvl, `实心体重叠：${boxes[i].kind}${at(boxes[i])} × ${boxes[j].kind}${at(boxes[j])}`)
+    }
+  }
+
+  // ---- 11. 金币不许长在实心体里（取代原规则 3——它只看管身、漏了帽沿）----
+  for (const c of d.coins ?? []) {
+    const cb = { l: c.x * TILE + TILE / 2 - COIN_SIZE / 2, r: c.x * TILE + TILE / 2 + COIN_SIZE / 2,
+                 t: c.y * TILE + TILE / 2 - COIN_SIZE / 2, b: c.y * TILE + TILE / 2 + COIN_SIZE / 2 }
+    const inside = boxes.find((o) => !deliberate(o) && hit(cb, o, 4))
+    if (inside) report(lvl, `金币(${c.x},${c.y}) 埋在 ${inside.kind}${at(inside)} 实体里（看得见、吃不到）`)
+  }
+
+  // ---- 12. 敌人出生点不许卡在实心体里 ----
+  for (const e of d.enemies ?? []) {
+    const [w, h] = ENEMY_BOX[e.type] ?? [26 * 3, 24 * 3]
+    const cx = e.x * TILE + TILE / 2, cy = e.y * TILE + TILE / 2
+    const eb = { l: cx - w / 2, r: cx + w / 2, t: cy - h / 2, b: cy + h / 2 }
+    // 站在地面上是正常的（脚刚好贴着顶面不算重叠，eps 已经吃掉了分离误差）。
+    const inside = boxes.find((o) => hit(eb, o, 4))
+    if (inside) report(lvl, `敌人 ${e.type}(${e.x},${e.y}) 出生就嵌在 ${inside.kind}${at(inside)} 里（开局会被弹飞/卡住）`)
+  }
+
+  // ---- 13. 砖块/问号块必须顶得到，站上去还得有站立净空 ----
+  // "顶得到" = 存在某个落脚面，站上去起跳后头顶（升 APEX + 身高）能够到方块
+  // 底面，且方块正下方那一段空气柱里没有别的实心体挡路。两个条件缺一不可：
+  //  · 只看"正下方最近的地板"会误报——2-1 的问号块悬在两块平台之间的 1 格
+  //    缝上方，正下方只有 6 格远的主地面（够不着），但从旁边那块平台起跳斜
+  //    着顶完全没问题。所以落脚面要在水平跳跃范围内找，不限于正下方。
+  //  · 只看"头顶高度够不够"也会误报反了——3-2 的问号块曾经直接坐在平台顶
+  //    面上（底面 = 平台顶面），地面在下面 5 格，高度算得通，实际上底面被
+  //    整块平台压死，星星永远顶不出来。所以还要检查空气柱。
+  const H_UP_PX = H_UP * TILE
+  for (const o of boxes) {
+    if (o.kind !== 'brick' && o.kind !== 'qblock') continue
+    const bumpable = boxes.some((f) => {
+      if (f === o || f.t <= o.b) return false                                   // 必须在方块底面之下
+      if (f.t - SMALL - PLAYER_JUMP_APEX > o.b) return false                    // 全跳头顶也够不着
+      if (Math.max(0, Math.max(f.l, o.l) - Math.min(f.r, o.r)) > H_UP_PX) return false // 水平太远
+      // 方块正下方 (o.b, f.t) 这段空气柱必须是空的，否则头会先撞到别的东西
+      return !boxes.some((s) => s !== o && s !== f && s.t < f.t && s.b > o.b && s.l < o.r - 2 && s.r > o.l + 2)
+    })
+    if (!bumpable) report(lvl, `${o.kind}${at(o)} 顶不到：找不到任何能把头送到它底面的落脚面（底面被压住或高度不够）`)
+    // 站立净空：顶面之上要塞得下一个小形态玩家。
+    const ceils = boxes.filter((f) => f !== o && f.b <= o.t && f.l < o.r - 8 && f.r > o.l + 8)
+    if (ceils.length) {
+      const gap = o.t - Math.max(...ceils.map((f) => f.b))
+      if (gap < SMALL) report(lvl, `${o.kind}${at(o)} 顶上只有 ${gap}px 净空（玩家 ${SMALL}px，站不上去）`)
+    }
+  }
+
+  console.log(`${lvl}: 表面 ${S.length} 个 / 实心盒 ${boxes.length} 个，全部审计完成`)
 }
 
 console.log(issues ? `\n共 ${issues} 个问题` : '\n✓ 全部关卡审计通过')

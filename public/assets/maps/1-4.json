@@ -1,7 +1,7 @@
 {
   "id": "1-4",
   "name": "沙丘迷城",
-  "widthTiles": 245,
+  "widthTiles": 258,
   "heightTiles": 16,
   "spawnTile": {
     "x": 1,
@@ -20,17 +20,17 @@
     },
     {
       "fromTile": 168,
-      "toTile": 201,
+      "toTile": 214,
       "tileY": 9
     },
     {
-      "fromTile": 212,
-      "toTile": 224,
+      "fromTile": 225,
+      "toTile": 237,
       "tileY": 9
     },
     {
-      "fromTile": 234,
-      "toTile": 245,
+      "fromTile": 247,
+      "toTile": 258,
       "tileY": 9
     }
   ],
@@ -58,14 +58,14 @@
   ],
   "movingPlatforms": [
     {
-      "x": 224,
+      "x": 237,
       "y": 9,
       "widthTiles": 3,
       "rangeXTiles": 7,
       "speed": 105
     },
     {
-      "x": 237,
+      "x": 250,
       "y": 4,
       "widthTiles": 3,
       "rangeYTiles": 4,
@@ -185,17 +185,17 @@
     },
     {
       "type": "shellbuddy",
-      "x": 170,
+      "x": 168,
       "y": 8
     },
     {
       "type": "shellbuddy",
-      "x": 235,
+      "x": 248,
       "y": 8
     },
     {
       "type": "mochi",
-      "x": 240,
+      "x": 253,
       "y": 8
     },
     {
@@ -205,19 +205,19 @@
     },
     {
       "type": "shellbuddy",
-      "x": 183,
+      "x": 187,
       "y": 8
     },
     {
       "type": "mochi",
-      "x": 191,
+      "x": 199,
       "y": 8
     }
   ],
   "waterZones": [
     {
-      "fromTile": 212,
-      "toTile": 245
+      "fromTile": 225,
+      "toTile": 258
     }
   ],
   "pipes": [
@@ -229,28 +229,28 @@
     },
     {
       "id": "trap1-4b",
-      "x": 179,
+      "x": 183,
       "groundTileY": 9,
       "hasTrap": true,
       "trapPhaseOffsetMs": 1025
     },
     {
       "id": "trap1-4c",
-      "x": 187,
+      "x": 195,
       "groundTileY": 9,
       "hasTrap": true,
       "trapPhaseOffsetMs": 2050
     },
     {
       "id": "entry1-4",
-      "x": 194,
+      "x": 207,
       "groundTileY": 9,
       "enterable": true,
       "warpToId": "uw1-4"
     },
     {
       "id": "uw1-4",
-      "x": 217,
+      "x": 230,
       "groundTileY": 9,
       "enterable": true,
       "warpToId": "entry1-4"
@@ -386,28 +386,28 @@
       "y": 6
     },
     {
-      "x": 214,
+      "x": 227,
       "y": 7
     },
     {
-      "x": 215,
+      "x": 228,
       "y": 7
     },
     {
-      "x": 222,
+      "x": 235,
       "y": 7
     },
     {
-      "x": 236,
-      "y": 4
+      "x": 249,
+      "y": 3
     },
     {
-      "x": 237,
-      "y": 4
+      "x": 250,
+      "y": 3
     },
     {
-      "x": 238,
-      "y": 4
+      "x": 251,
+      "y": 3
     },
     {
       "x": 174,
@@ -422,27 +422,27 @@
       "y": 6
     },
     {
-      "x": 182,
+      "x": 186,
       "y": 6
     },
     {
-      "x": 183,
+      "x": 187,
       "y": 6
     },
     {
-      "x": 184,
+      "x": 188,
       "y": 6
     },
     {
-      "x": 190,
+      "x": 198,
       "y": 6
     },
     {
-      "x": 191,
+      "x": 199,
       "y": 6
     },
     {
-      "x": 192,
+      "x": 200,
       "y": 6
     }
   ],
@@ -543,7 +543,7 @@
     }
   ],
   "flagpoleTile": {
-    "x": 199,
+    "x": 212,
     "y": 9
   }
 }

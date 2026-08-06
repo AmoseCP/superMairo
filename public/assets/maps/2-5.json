@@ -1,7 +1,7 @@
 {
   "id": "2-5",
   "name": "双子魔堡",
-  "widthTiles": 246,
+  "widthTiles": 250,
   "heightTiles": 14,
   "spawnTile": {
     "x": 1,
@@ -36,12 +36,12 @@
     },
     {
       "fromTile": 126,
-      "toTile": 200,
+      "toTile": 204,
       "tileY": 11
     },
     {
-      "fromTile": 210,
-      "toTile": 246,
+      "fromTile": 214,
+      "toTile": 250,
       "tileY": 11
     }
   ],
@@ -121,17 +121,17 @@
     }
   ],
   "sovereigns": {
-    "triggerTile": 154,
+    "triggerTile": 158,
     "wallTiles": [
-      151,
-      183
+      155,
+      187
     ],
     "spawnTile": {
-      "x": 166,
+      "x": 170,
       "y": 9
     },
     "spawnTile2": {
-      "x": 174,
+      "x": 178,
       "y": 9
     }
   },
@@ -198,14 +198,14 @@
     },
     {
       "type": "mochi",
-      "x": 146,
+      "x": 143,
       "y": 10
     }
   ],
   "waterZones": [
     {
-      "fromTile": 210,
-      "toTile": 246
+      "fromTile": 214,
+      "toTile": 250
     }
   ],
   "pipes": [
@@ -217,21 +217,21 @@
     },
     {
       "id": "trap2-5b",
-      "x": 146,
+      "x": 150,
       "groundTileY": 11,
       "hasTrap": true,
       "trapPhaseOffsetMs": 1500
     },
     {
       "id": "entry2-5",
-      "x": 192,
+      "x": 196,
       "groundTileY": 11,
       "enterable": true,
       "warpToId": "uw2-5"
     },
     {
       "id": "uw2-5",
-      "x": 214,
+      "x": 218,
       "groundTileY": 11,
       "enterable": true,
       "warpToId": "entry2-5"
@@ -347,7 +347,7 @@
       "y": 8
     },
     {
-      "x": 139,
+      "x": 140,
       "y": 8
     },
     {
@@ -355,40 +355,32 @@
       "y": 8
     },
     {
-      "x": 147,
+      "x": 152,
       "y": 8
     },
     {
-      "x": 148,
+      "x": 152,
       "y": 8
-    },
-    {
-      "x": 186,
-      "y": 8
-    },
-    {
-      "x": 188,
-      "y": 7
     },
     {
       "x": 190,
       "y": 8
     },
     {
-      "x": 196,
+      "x": 192,
+      "y": 7
+    },
+    {
+      "x": 194,
       "y": 8
     },
     {
-      "x": 212,
+      "x": 200,
       "y": 8
     },
     {
       "x": 216,
       "y": 8
-    },
-    {
-      "x": 218,
-      "y": 9
     },
     {
       "x": 220,
@@ -439,7 +431,15 @@
       "y": 9
     },
     {
-      "x": 199,
+      "x": 244,
+      "y": 8
+    },
+    {
+      "x": 246,
+      "y": 9
+    },
+    {
+      "x": 203,
       "y": 9
     }
   ],
@@ -455,12 +455,12 @@
       "item": "fireflower"
     },
     {
-      "x": 154,
+      "x": 158,
       "y": 8,
       "item": "fireflower"
     },
     {
-      "x": 180,
+      "x": 184,
       "y": 8,
       "item": "fireflower"
     },
@@ -493,7 +493,7 @@
       "y": 8
     },
     {
-      "x": 136,
+      "x": 133,
       "y": 8
     }
   ],
@@ -511,7 +511,7 @@
   "dualSwitchChests": [],
   "timedDoors": [],
   "flagpoleTile": {
-    "x": 197,
+    "x": 201,
     "y": 11
   }
 }

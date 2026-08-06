@@ -5,15 +5,17 @@ import { tryArtSprite } from '../utils/artSwap.js'
 const BUMP_TWEEN_Y = 8 * WORLD_SCALE
 const SPAWN_ITEM_Y_OFFSET = 28 * WORLD_SCALE
 const KNOCK_TWEEN_Y = 6 * WORLD_SCALE
-// Drawn (and hit-tested visually) taller than the 1-tile physics footprint —
-// a plain TILE_SIZE-tall block reads as noticeably shorter than the player
-// (who's drawn chunkier/taller than one tile, matching the Q版萌 art style),
-// which looked like a puny, easy-to-miss obstacle. Grown downward only (TOP
-// edge stays put): the top must stay flush with the physics body's top or a
-// player standing on the brick looks sunk into it up to the ankles; the
-// extra height hanging below is harmless since bricks float in open air —
-// see the physics-vs-visual split below.
-const VISUAL_HEIGHT_SCALE = 1.25
+// The drawn size MUST equal the physics footprint (exactly one tile).
+//
+// This used to be 1.25 — bricks were drawn 24px taller than their hitbox,
+// grown downward, purely so they'd read chunkier next to the player. That
+// bottom quarter was pure lie: it looked solid but nothing collided with
+// it. Players reported floating blocks they "couldn't touch" — jumping up
+// beside one, your head passes straight through the visible bottom edge,
+// and a head-on bump stops 24px inside the drawing. Any cosmetic size bump
+// has to come from the art itself (see BLOCK_ART), never from a visual that
+// disagrees with the body.
+const VISUAL_HEIGHT_SCALE = 1
 
 /**
  * Classic brick block: hit from below (see GameScene._handlePlayerBlockCollision,

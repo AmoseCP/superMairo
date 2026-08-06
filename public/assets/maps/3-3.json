@@ -1,7 +1,7 @@
 {
   "id": "3-3",
   "name": "疾风飞车",
-  "widthTiles": 296,
+  "widthTiles": 309,
   "heightTiles": 12,
   "spawnTile": {
     "x": 1,
@@ -31,12 +31,12 @@
     },
     {
       "fromTile": 182,
-      "toTile": 260,
+      "toTile": 273,
       "tileY": 10
     },
     {
-      "fromTile": 260,
-      "toTile": 296,
+      "fromTile": 273,
+      "toTile": 309,
       "tileY": 10
     }
   ],
@@ -130,8 +130,8 @@
   ],
   "waterZones": [
     {
-      "fromTile": 260,
-      "toTile": 296
+      "fromTile": 273,
+      "toTile": 309
     }
   ],
   "pipes": [
@@ -143,21 +143,21 @@
     },
     {
       "id": "trap3-3b",
-      "x": 245,
+      "x": 251,
       "groundTileY": 10,
       "hasTrap": true,
       "trapPhaseOffsetMs": 1300
     },
     {
       "id": "entry3-3",
-      "x": 250,
+      "x": 263,
       "groundTileY": 10,
       "enterable": true,
       "warpToId": "uw3-3"
     },
     {
       "id": "uw3-3",
-      "x": 266,
+      "x": 279,
       "groundTileY": 10,
       "enterable": true,
       "warpToId": "entry3-3"
@@ -193,7 +193,7 @@
     }
   ],
   "flagpoleTile": {
-    "x": 254,
+    "x": 267,
     "y": 10
   },
   "coins": [
@@ -390,39 +390,39 @@
       "y": 8
     },
     {
-      "x": 262,
+      "x": 275,
       "y": 8
     },
     {
-      "x": 264,
+      "x": 277,
       "y": 8
     },
     {
-      "x": 268,
+      "x": 281,
       "y": 8
     },
     {
-      "x": 272,
+      "x": 285,
       "y": 8
     },
     {
-      "x": 276,
+      "x": 289,
       "y": 8
     },
     {
-      "x": 280,
+      "x": 293,
       "y": 8
     },
     {
-      "x": 284,
+      "x": 297,
       "y": 8
     },
     {
-      "x": 288,
+      "x": 301,
       "y": 8
     },
     {
-      "x": 292,
+      "x": 305,
       "y": 8
     }
   ]

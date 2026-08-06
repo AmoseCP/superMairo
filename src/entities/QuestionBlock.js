@@ -4,9 +4,9 @@ import { tryArtSprite } from '../utils/artSwap.js'
 
 const BUMP_TWEEN_Y = 8 * WORLD_SCALE
 const SPAWN_ITEM_Y_OFFSET = 28 * WORLD_SCALE
-// See Brick.js VISUAL_HEIGHT_SCALE — same "taller than the 1-tile hitbox"
-// treatment, kept in sync so bricks and question blocks read as the same size.
-const VISUAL_HEIGHT_SCALE = 1.25
+// See Brick.js VISUAL_HEIGHT_SCALE — kept in sync: the drawn size equals the
+// 1-tile physics footprint, so there is no visible-but-intangible band.
+const VISUAL_HEIGHT_SCALE = 1
 
 /**
  * One-time-use bump block. Player must hit it from below (checked by the

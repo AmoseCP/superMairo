@@ -785,6 +785,10 @@ export class GameScene extends Phaser.Scene {
     this.physics.add.overlap(this.turretShotGroup, this.groundGroup, (shotRect) => {
       shotRect.getData('turretShotRef')?.destroy()
     })
+    // Same reason as the fireball/blocks overlap: blocks are their own group.
+    this.physics.add.overlap(this.turretShotGroup, this.blocksGroup, (shotRect) => {
+      shotRect.getData('turretShotRef')?.destroy()
+    })
     this.physics.add.overlap(this.turretShotGroup, this.fireballGroup, (shotRect, fireballRect) => {
       shotRect.getData('turretShotRef')?.destroy()
       fireballRect.getData('fireballRef')?.destroy()
@@ -1376,6 +1380,17 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.physics.add.collider(this.itemsGroup, this.groundGroup)
+    // Bricks/question blocks are solid for EVERYONE, not just players.
+    // blocksGroup used to be wired against player.rect only (see
+    // _wirePlayerCollisions), which made every brick and question block a
+    // player-only platform: enemies strolled straight through them, and a
+    // mushroom popped out of a question block fell through the brick row it
+    // landed on down to the ground. Both read as "the blocks aren't really
+    // there". groundGroup can't just absorb them — _handlePlayerBlockCollision
+    // needs its own collider to catch the from-below bump — so the other
+    // physics groups get their own plain solid colliders here instead.
+    this.physics.add.collider(this.itemsGroup, this.blocksGroup)
+    this.physics.add.collider(this.enemyGroup, this.blocksGroup)
     this.physics.add.collider(this.fireballGroup, this.enemyGroup, (fireballRect, enemyRect) => {
       const fireball = fireballRect.getData('fireballRef')
       const enemy = enemyRect.getData('enemyRef')
@@ -1425,6 +1440,10 @@ export class GameScene extends Phaser.Scene {
     // separation limit, which skips separation entirely and let the shot
     // sail straight through the pipe and hit things on the far side.
     this.physics.add.overlap(fireball.rect, this.groundGroup, () => fireball.destroy())
+    // …and against blocks too, or fireballs sail through every brick and
+    // question block (they're not groundGroup members — see the solidity
+    // colliders in _loadItemsAndBlocks).
+    this.physics.add.overlap(fireball.rect, this.blocksGroup, () => fireball.destroy())
   }
 
   _wirePlayerCollisions(player) {

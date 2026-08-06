@@ -1,7 +1,7 @@
 {
   "id": "1-1",
   "name": "阳光草地",
-  "widthTiles": 180,
+  "widthTiles": 182,
   "heightTiles": 10,
   "spawnTile": {
     "x": 1,
@@ -20,12 +20,12 @@
     },
     {
       "fromTile": 79,
-      "toTile": 134,
+      "toTile": 136,
       "tileY": 9
     },
     {
-      "fromTile": 145,
-      "toTile": 175,
+      "fromTile": 147,
+      "toTile": 177,
       "tileY": 9
     }
   ],
@@ -99,8 +99,8 @@
   ],
   "waterZones": [
     {
-      "fromTile": 145,
-      "toTile": 175
+      "fromTile": 147,
+      "toTile": 177
     }
   ],
   "pipes": [
@@ -112,14 +112,14 @@
     },
     {
       "id": "entry1-1",
-      "x": 124,
+      "x": 126,
       "groundTileY": 9,
       "enterable": true,
       "warpToId": "uw1-1"
     },
     {
       "id": "uw1-1",
-      "x": 150,
+      "x": 152,
       "groundTileY": 9,
       "enterable": true,
       "warpToId": "entry1-1"
@@ -243,10 +243,6 @@
       "y": 6
     },
     {
-      "x": 155,
-      "y": 6
-    },
-    {
       "x": 157,
       "y": 6
     },
@@ -272,6 +268,10 @@
     },
     {
       "x": 169,
+      "y": 6
+    },
+    {
+      "x": 171,
       "y": 6
     },
     {
@@ -383,7 +383,7 @@
     }
   ],
   "flagpoleTile": {
-    "x": 130,
+    "x": 132,
     "y": 9
   }
 }

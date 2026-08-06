@@ -731,6 +731,10 @@ export class GameScene extends Phaser.Scene {
     spring.cooldownUntil = now + SPRING_COOLDOWN_MS
     const holdingJump = !!player.inputManager?.state.jump
     player.body.setVelocityY(-spring.velocity * (holdingJump ? SPRING_HOLD_BONUS : 1))
+    // Disarm the variable-jump clip: this impulse is the spring's, not the
+    // player's jump, and must not be clipped down to PLAYER_JUMP_CUT_VELOCITY
+    // the moment they let go of the button.
+    player.jumpCutArmed = false
     spring.bounce()
     this.audioManager?.playSpring?.()
   }
@@ -1391,6 +1395,16 @@ export class GameScene extends Phaser.Scene {
     // physics groups get their own plain solid colliders here instead.
     this.physics.add.collider(this.itemsGroup, this.blocksGroup)
     this.physics.add.collider(this.enemyGroup, this.blocksGroup)
+    // Fireball dies on contact with any solid. Overlap (not collider): the
+    // shot must die the moment it touches one, including when it spawns
+    // already embedded — firing point-blank at a pipe used to bury the
+    // fireball deeper than Arcade's max-overlap separation limit, which
+    // skips separation entirely and let the shot sail straight through.
+    // Registered once against the GROUP, so a shot is covered the instant
+    // it joins fireballGroup and nothing has to be unregistered when it dies.
+    const killFireball = (fireballRect) => fireballRect.getData('fireballRef')?.destroy()
+    this.physics.add.overlap(this.fireballGroup, this.groundGroup, killFireball)
+    this.physics.add.overlap(this.fireballGroup, this.blocksGroup, killFireball)
     this.physics.add.collider(this.fireballGroup, this.enemyGroup, (fireballRect, enemyRect) => {
       const fireball = fireballRect.getData('fireballRef')
       const enemy = enemyRect.getData('enemyRef')
@@ -1434,16 +1448,13 @@ export class GameScene extends Phaser.Scene {
     // constructor (same "group defaults override on add" gotcha as moving
     // platforms/items — see PLAN.md §7 item 9). Re-assert it after adding.
     fireball.body.setVelocityX(player.facing * FIREBALL_SPEED)
-    // Overlap (not collider): the shot dies the moment it touches ANY solid,
-    // including when it spawns already embedded in one — firing point-blank
-    // at a pipe used to bury the fireball deeper than Arcade's max-overlap
-    // separation limit, which skips separation entirely and let the shot
-    // sail straight through the pipe and hit things on the far side.
-    this.physics.add.overlap(fireball.rect, this.groundGroup, () => fireball.destroy())
-    // …and against blocks too, or fireballs sail through every brick and
-    // question block (they're not groundGroup members — see the solidity
-    // colliders in _loadItemsAndBlocks).
-    this.physics.add.overlap(fireball.rect, this.blocksGroup, () => fireball.destroy())
+    // NOTE: the "fireball dies on any solid" rule is a GROUP-level overlap
+    // registered once at level load (see _loadItemsAndBlocks) — deliberately
+    // NOT registered per shot here. Arcade never garbage-collects a Collider
+    // when its GameObject is destroyed (only World.removeCollider does), so
+    // a per-shot registration leaked two dead colliders per trigger pull,
+    // each still walking the whole groundGroup every physics step for the
+    // rest of the level.
   }
 
   _wirePlayerCollisions(player) {
@@ -1500,6 +1511,7 @@ export class GameScene extends Phaser.Scene {
     if (isStomp) {
       enemy.onStomp(player)
       player.body.setVelocityY(-STOMP_BOUNCE_VELOCITY)
+      player.jumpCutArmed = false // same reason as the spring: not the player's own jump
       this.audioManager?.playStomp()
       // ShellBuddy stomps just change state (tuck in / kick) without dying —
       // only award kill score when the stomp actually finished it off. A
@@ -1677,6 +1689,12 @@ export class GameScene extends Phaser.Scene {
     for (const enemy of this.enemies) enemy.update(time)
     for (const item of this.items) item.update()
     for (const fireball of this.fireballs) fireball.update(time)
+    // Drop the dead ones (same housekeeping _updateTurrets already does for
+    // turretShots). Without it these two arrays only ever grow: every coin
+    // collected and every fireball fired stayed in them for the whole level,
+    // getting a pointless update() call per frame forever.
+    this.items = this.items.filter((i) => !i.dead)
+    this.fireballs = this.fireballs.filter((f) => !f.dead)
     for (const platform of this.movingPlatforms) platform.update()
     this._applyPlatformCarry()
     // Priority ordering (LEVELS2.md §3 风险预判): platform glue > conveyor >

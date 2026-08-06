@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          # 测试用了 node:module 的 registerHooks（同步 resolve 钩子），
+          # 需要 Node 22.15+；这里固定到 24 LTS 线。
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      # 关卡几何审计：可达性、净空、实心体重叠、金币/敌人嵌入实体、方块可顶到性
+      - run: npm run audit
+      # 引擎接线回归：绘制盒==物理盒、方块对谁实心、火球 collider 不泄漏
+      - run: npm test
+      - run: npm run build

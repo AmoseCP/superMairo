@@ -15,6 +15,16 @@ export const PLAYER_WALK_SPEED = 200 * WORLD_SCALE
 export const PLAYER_RUN_SPEED = 300 * WORLD_SCALE
 export const PLAYER_ACCEL = 1800 * WORLD_SCALE
 export const PLAYER_JUMP_VELOCITY = 520 * WORLD_SCALE
+// Variable jump height (see Player.update): releasing the jump button while
+// still rising clips the remaining upward speed down to this floor, so a tap
+// is a short hop and a hold is the full arc. Apex = v²/2g, so with the world
+// gravity above: hold = 338px ≈ 3.5 tiles, tap = 145px ≈ 1.5 tiles.
+// Purely additive control — holding the button reproduces the old fixed jump
+// exactly, so no existing level's reachability changes.
+// Only the player's OWN jump may be clipped; scripted impulses (spring pads,
+// stomp bounce) disarm the cut, or a spring would fire you 2352px/s upward
+// and get clamped back to this on the very next frame.
+export const PLAYER_JUMP_CUT_VELOCITY = 340 * WORLD_SCALE
 
 export const COYOTE_TIME_MS = 120
 export const JUMP_BUFFER_MS = 120

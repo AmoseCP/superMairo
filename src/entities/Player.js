@@ -5,6 +5,7 @@ import {
   JUMP_BUFFER_MS,
   PLAYER_ACCEL,
   PLAYER_BIG_HEIGHT,
+  PLAYER_JUMP_CUT_VELOCITY,
   PLAYER_JUMP_VELOCITY,
   PLAYER_RUN_SPEED,
   PLAYER_SMALL_HEIGHT,
@@ -56,6 +57,9 @@ export class Player {
     this.skin = skin
     this.facing = 1
     this.wasOnFloor = true
+    // True between the player's own jump and either the apex or the button
+    // release — see the variable-jump-height block in update().
+    this.jumpCutArmed = false
     this.form = 'small' // 'small' | 'big' | 'fire'
     this.starUntil = 0
     this.hitInvincibleUntil = 0
@@ -199,6 +203,7 @@ export class Player {
     this.wasOnFloor = true
     this.lastGroundedTime = -Infinity
     this.jumpPressedTime = -Infinity
+    this.jumpCutArmed = false
     this._ridingPlatform = null
     this.lastSafeX = x
     this.lastSafeY = y
@@ -242,7 +247,21 @@ export class Player {
       this.body.setVelocityY(-PLAYER_JUMP_VELOCITY)
       this.lastGroundedTime = -Infinity
       this.jumpPressedTime = -Infinity
+      this.jumpCutArmed = true
       this.audioManager?.playJump()
+    }
+    // Variable jump height. Armed only by the jump above — an external
+    // impulse (Spring._handlePlayerSpringCollision) clears the flag, so the
+    // clip can never eat a spring launch. Disarms at the apex too: past that
+    // point there's no rise left to cut, and leaving it armed would let a
+    // late button release clip a *later* impulse received while falling.
+    if (this.jumpCutArmed) {
+      if (this.body.velocity.y >= 0) {
+        this.jumpCutArmed = false
+      } else if (!input.jump) {
+        if (this.body.velocity.y < -PLAYER_JUMP_CUT_VELOCITY) this.body.setVelocityY(-PLAYER_JUMP_CUT_VELOCITY)
+        this.jumpCutArmed = false
+      }
     }
 
     if (onFloor && !this.wasOnFloor) {

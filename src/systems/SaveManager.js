@@ -1,5 +1,8 @@
 const DB_NAME = 'super-mario-web'
-const DB_VERSION = 1
+// v1 → v2：新增 ghosts（最速那一把的走位录像，见 systems/GhostRecorder.js）。
+// onupgradeneeded 里每个 store 都做了 contains 判断，所以从任意旧版本升上来
+// 都只会补建缺的那些，老玩家的分数历史原样保留。
+const DB_VERSION = 2
 
 function openDb() {
   return new Promise((resolve, reject) => {
@@ -11,6 +14,9 @@ function openDb() {
       }
       if (!db.objectStoreNames.contains('bestByLevel')) {
         db.createObjectStore('bestByLevel', { keyPath: 'levelId' })
+      }
+      if (!db.objectStoreNames.contains('ghosts')) {
+        db.createObjectStore('ghosts', { keyPath: 'levelId' })
       }
     }
     req.onsuccess = () => resolve(req.result)
@@ -79,6 +85,41 @@ export class SaveManager {
       const db = await this._db()
       return await new Promise((resolve, reject) => {
         const req = db.transaction('bestByLevel', 'readonly').objectStore('bestByLevel').get(levelId)
+        req.onsuccess = () => resolve(req.result ?? null)
+        req.onerror = () => reject(req.error)
+      })
+    } catch {
+      return null
+    }
+  }
+
+  // --- 最速幽灵录像（systems/GhostRecorder.js）-----------------------------
+  // 放 IndexedDB 而不是 localStorage：一条录像是上千个采样点，15 关加起来
+  // 足以吃掉 localStorage 那几 MB 的配额，而且这里也不需要同步读——幽灵晚
+  // 一两帧出现完全无所谓。
+
+  /** 保存某关的最速走位录像（只在刷新最速纪录时调用，一关只留一条）。 */
+  async saveGhost(levelId, ghost) {
+    try {
+      const db = await this._db()
+      return await new Promise((resolve, reject) => {
+        const tx = db.transaction(['ghosts'], 'readwrite')
+        tx.objectStore('ghosts').put({ levelId, ...ghost })
+        tx.oncomplete = () => resolve(true)
+        tx.onerror = () => reject(tx.error)
+      })
+    } catch (err) {
+      console.warn('SaveManager.saveGhost failed (storage unavailable?)', err)
+      return false
+    }
+  }
+
+  /** 取某关的最速录像；没有或存储不可用时返回 null（调用方据此不显示幽灵）。 */
+  async getGhost(levelId) {
+    try {
+      const db = await this._db()
+      return await new Promise((resolve, reject) => {
+        const req = db.transaction(['ghosts'], 'readonly').objectStore('ghosts').get(levelId)
         req.onsuccess = () => resolve(req.result ?? null)
         req.onerror = () => reject(req.error)
       })

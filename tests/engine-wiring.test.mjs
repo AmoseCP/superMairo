@@ -144,3 +144,69 @@ test('设置：缺失/损坏的存档一律退回默认值，未知键被忽略'
   round.set('infiniteLives', true)
   assert.equal(new SettingsManager().get('infiniteLives'), true, '写入后没有持久化')
 })
+
+// --- 7. 幽灵录像的时间轴 ---------------------------------------------------
+// 曾经的 bug：采样间隔写成"上次采样时刻 + 50ms"，而帧长 16.7ms 除不尽 50ms，
+// 误差每帧累积——实测 6 秒只记到 107 个点（应为 120），存下来的幽灵比它实际
+// 跑的快 11%，速通对照直接失真。第 i 个采样点必须严格代表 i×50ms 这一刻。
+test('幽灵：采样点落在固定时间栅格上，不随帧长漂移', async () => {
+  const { GhostRecorder, SAMPLE_INTERVAL_MS } = await import('../src/systems/GhostRecorder.js')
+  const rec = new GhostRecorder()
+  const player = { rect: { x: 0, y: 100 }, form: 'small' }
+  const FRAME = 1000 / 60
+  const DURATION = 6000
+  // 用最后一次真实喂进去的时间戳来算期望值：帧长是无限小数，循环累加到
+  // 6000 时会差几个 ulp，写死 DURATION 会让断言自己差一个点。
+  let last = 0
+  for (let t = 0; t <= DURATION; t += FRAME) {
+    player.rect.x = t // 位置直接编码时间，方便反查
+    rec.sample(t, player)
+    last = t
+  }
+  const n = rec.samples.length / 3
+  assert.equal(n, Math.floor(last / SAMPLE_INTERVAL_MS) + 1, `采样数漂移了：${n}`)
+  // 漂移版实现在这个时长下只会记到 ~107 个点，这条下界就是它的照妖镜
+  assert.ok(n >= 119, `采样明显偏少（${n}），间隔正在随帧长漂移`)
+  // 第 i 个点必须是"第 i×50ms 之后的第一帧"采到的，也就是最多晚一帧。
+  // 容差里的 +1 是采样时 Math.round 到整像素带来的（位置在这里编码的是时间）。
+  for (const i of [0, 20, 60, n - 1]) {
+    const recordedAt = rec.samples[i * 3]
+    const delay = recordedAt - i * SAMPLE_INTERVAL_MS
+    assert.ok(delay >= 0 && delay <= FRAME + 1, `第 ${i} 点偏离栅格 ${delay}ms（应在 [0, 一帧] 内）`)
+  }
+})
+
+test('幽灵：掉帧跨过整格时补齐采样，时间轴不错位', async () => {
+  const { GhostRecorder, SAMPLE_INTERVAL_MS } = await import('../src/systems/GhostRecorder.js')
+  const rec = new GhostRecorder()
+  const player = { rect: { x: 10, y: 100 }, form: 'small' }
+  rec.sample(0, player)
+  player.rect.x = 999
+  rec.sample(SAMPLE_INTERVAL_MS * 5, player) // 一次卡顿跨过 4 个格子
+  assert.equal(rec.samples.length / 3, 6, '空档没有被补齐，后续采样会整体前移')
+  assert.equal(rec.samples[5 * 3], 999, '最后一个点应当是本次真实采样')
+})
+
+test('幽灵：回放按经过时间插值，跑完即隐藏', async () => {
+  const { GhostRecorder, GhostPlayback, SAMPLE_INTERVAL_MS } = await import('../src/systems/GhostRecorder.js')
+  const rec = new GhostRecorder()
+  const player = { rect: { x: 0, y: 100 }, form: 'small' }
+  for (let i = 0; i < 10; i++) {
+    player.rect.x = i * 100
+    rec.sample(i * SAMPLE_INTERVAL_MS, player)
+  }
+  const ghost = rec.toGhost(9 * SAMPLE_INTERVAL_MS)
+  const scene = makeSceneStub()
+  const pb = new GhostPlayback(scene, ghost)
+
+  pb.update(0)
+  assert.equal(pb.rect.x, 0)
+  pb.update(SAMPLE_INTERVAL_MS * 3)
+  assert.equal(pb.rect.x, 300, '整格时刻应当正好落在采样点上')
+  pb.update(SAMPLE_INTERVAL_MS * 3.5)
+  assert.equal(pb.rect.x, 350, '格子之间应当线性插值')
+  pb.update(SAMPLE_INTERVAL_MS * 50)
+  assert.equal(pb.rect.visible, false, '录像放完后幽灵应当消失（= 你已经落后于自己的纪录）')
+  // 纯视觉：绝不能挂物理体，否则会挡路/被踩
+  assert.equal(pb.rect.body, null)
+})

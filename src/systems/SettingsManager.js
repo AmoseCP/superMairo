@@ -21,6 +21,12 @@ export const SETTING_DEFS = [
     default: false,
   },
   {
+    key: 'showGhost',
+    label: '最速幽灵',
+    hint: '显示你自己最快那一把的半透明走位，实时对照（没有纪录时不显示）',
+    default: true,
+  },
+  {
     key: 'reduceMotion',
     label: '减弱画面效果',
     hint: '关闭受击/踩敌的画面震动与卡帧（晕动症友好）',

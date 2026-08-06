@@ -16,6 +16,7 @@ import { CoopManager } from '../systems/CoopManager.js'
 import { ScoreManager, COMBO_MULTIPLIERS } from '../systems/ScoreManager.js'
 import { SaveManager } from '../systems/SaveManager.js'
 import { SettingsManager } from '../systems/SettingsManager.js'
+import { GhostRecorder, GhostPlayback } from '../systems/GhostRecorder.js'
 import { Mochi } from '../entities/enemies/Mochi.js'
 import { ShellBuddy } from '../entities/enemies/ShellBuddy.js'
 import { IceShell } from '../entities/enemies/IceShell.js'
@@ -271,6 +272,10 @@ export class GameScene extends Phaser.Scene {
     // Not carried across restarts — a warp fade interrupted by level change
     // must not leave warps permanently locked.
     this._pipeWarpInProgress = false
+    // 同上：Phaser 复用同一个 Scene 实例，create() 会在每次进关时重跑，而
+    // 'shutdown' 时置的标志会原样留到下一关。忘了清这一个的后果是：第一次
+    // 离开关卡之后，所有异步回调都以为场景已经销毁，幽灵再也不会出现。
+    this._shutdown = false
 
     const worldWidth = level.widthTiles * TILE_SIZE
     const worldHeight = level.heightTiles * TILE_SIZE
@@ -373,6 +378,21 @@ export class GameScene extends Phaser.Scene {
     this.saveManager.getBestByLevel(this.levelId).then((best) => {
       if (best?.bestTimeMs > 0) this.bestTimeMs = best.bestTimeMs
     })
+
+    // 最速幽灵：录当前这一把（只有刷新最速时才会存下来），同时把上一条最速
+    // 录像放出来做实时对照。录的是 P1——双人下两条幽灵会糊成一团，而且速通
+    // 对照本来就是单人语义。
+    this.ghostRecorder = new GhostRecorder()
+    this.ghostPlayback = null
+    // 场景可能在 IndexedDB 回来之前就被切走（选关/重开），那时候再 add 一个
+    // GameObject 就是往死掉的场景里塞东西。
+    this.events.once('shutdown', () => { this._shutdown = true })
+    if (this.settings.get('showGhost')) {
+      this.saveManager.getGhost(this.levelId).then((ghost) => {
+        if (this._shutdown || !ghost?.samples?.length) return
+        this.ghostPlayback = new GhostPlayback(this, ghost)
+      })
+    }
 
     const audioManager = new AudioManager(this)
     this.audioManager = audioManager
@@ -1806,6 +1826,9 @@ export class GameScene extends Phaser.Scene {
       if (this._advanceArmed && confirmDown && !this._levelCompleteAdvancing) this._advanceAfterLevelComplete()
       return
     }
+    const elapsedMs = time - this.startTime
+    this.ghostRecorder.sample(elapsedMs, this.coop.p1)
+    this.ghostPlayback?.update(elapsedMs)
     this.coop.update(time, delta)
     // NOTE: pass `time` — CandySlimeKing's attack timers and Bat's swoop
     // state machine are time-driven (plain patrollers just ignore the arg).
@@ -2016,6 +2039,11 @@ export class GameScene extends Phaser.Scene {
     this.saveManager
       .recordLevelResult({ levelId: this.levelId, score, coins, timeMs, players: this.coop.p2Joined ? 2 : 1 })
       .then(({ isNewBest, isNewBestTime }) => {
+        // 幽灵只保留最速那一把——它代表的就是"你能跑多快"。
+        if (isNewBestTime) {
+          const ghost = this.ghostRecorder.toGhost(timeMs)
+          if (ghost) this.saveManager.saveGhost(this.levelId, ghost)
+        }
         const banners = [isNewBest && '✨ 打破最高分纪录！', isNewBestTime && '⚡ 打破最速纪录！'].filter(Boolean)
         if (banners.length) {
           this.levelCompleteText.setText(`🎉 ${this.level.name} 通关！\n${scoreSummary}\n${banners.join('　')}\n${retryHint}`)

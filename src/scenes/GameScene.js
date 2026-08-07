@@ -51,7 +51,7 @@ import { CheckpointManager } from '../systems/CheckpointManager.js'
 import { DualSwitchChest } from '../entities/DualSwitchChest.js'
 import { TimedDoor } from '../entities/TimedDoor.js'
 import { TouchControls } from '../input/TouchControls.js'
-import { LEVELS } from '../config/levels.js'
+import { LEVELS, isWorldOpener } from '../config/levels.js'
 import { MISC_ART, backgroundArtFor } from '../config/assets.js'
 import { tryArtSprite } from '../utils/artSwap.js'
 
@@ -2058,12 +2058,21 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.fadeOut(250, 0, 0, 0)
     this.cameras.main.once('camerafadeoutcomplete', () => {
       if (this._nextLevelId) {
-        this.scene.restart({
+        const carry = {
           levelId: this._nextLevelId,
           priorScore: this.totalScore,
           priorCoins: this.totalCoins,
           priorForms: { p1: this.coop.p1.form, p2: this.coop.p2?.form ?? 'small' },
-        })
+        }
+        // 跨进新世界时先插一张过渡卡（WorldIntroScene 会把 carry 原样传回来）。
+        // 只在"一关接一关"的推进里插——从选关页直接点开某一关是玩家自己指定
+        // 的目标，不需要再被一段过场挡一下。
+        if (isWorldOpener(this._nextLevelId)) {
+          this.scene.stop('GameScene')
+          this.scene.start('WorldIntroScene', carry)
+        } else {
+          this.scene.restart(carry)
+        }
       } else {
         // All levels cleared — show the run's final results instead of
         // silently looping back into level 1 (VictoryScene offers the restart).

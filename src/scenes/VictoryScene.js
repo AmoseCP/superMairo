@@ -1,5 +1,6 @@
 import Phaser from 'phaser'
-import { FIRST_LEVEL_ID } from '../config/levels.js'
+import { FIRST_LEVEL_ID, LEVELS, TOTAL_BIG_COINS, BIG_COINS_PER_LEVEL } from '../config/levels.js'
+import { SaveManager } from '../systems/SaveManager.js'
 
 /**
  * Shown once ALL levels are cleared (see GameScene._advanceAfterLevelComplete)
@@ -34,11 +35,22 @@ export class VictoryScene extends Phaser.Scene {
     const coopLine = this.coop
       ? `\n最终关表现　P1：${this.p1Score}（🪙${this.p1.coins} ⚔${this.p1.kills}）　P2：${this.p2Score}（🪙${this.p2.coins} ⚔${this.p2.kills}）`
       : ''
+    // 全收集进度：通关只是主线，45 枚大金币才是这一档存档的完成度。
+    const record = new SaveManager().getBigCoinRecord()
+    const stars = Object.keys(LEVELS).reduce(
+      (n, id) => n + Math.min(BIG_COINS_PER_LEVEL, record[id]?.length ?? 0),
+      0,
+    )
+    const allStars = stars === TOTAL_BIG_COINS
+    const starLine = allStars
+      ? `\n★ 大金币 ${stars}/${TOTAL_BIG_COINS} —— 全收集达成！`
+      : `\n★ 大金币 ${stars}/${TOTAL_BIG_COINS}（还差 ${TOTAL_BIG_COINS - stars} 枚）`
+
     this.add
-      .text(cx, cy - 60, `🏆 恭喜通关全部关卡！\n\n总得分：${this.score}　总金币：${this.coins}${coopLine}`, {
+      .text(cx, cy - 60, `🏆 恭喜通关全部关卡！\n\n总得分：${this.score}　总金币：${this.coins}${starLine}${coopLine}`, {
         fontFamily: 'sans-serif',
         fontSize: '32px',
-        color: '#ffe066',
+        color: allStars ? '#a8e6a1' : '#ffe066',
         align: 'center',
       })
       .setOrigin(0.5)

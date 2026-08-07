@@ -1,5 +1,5 @@
 import Phaser from 'phaser'
-import { LEVELS } from '../config/levels.js'
+import { LEVELS, WORLDS, worldOf, TOTAL_BIG_COINS, BIG_COINS_PER_LEVEL as PER_LEVEL } from '../config/levels.js'
 import { SaveManager } from '../systems/SaveManager.js'
 import { SettingsManager, SETTING_DEFS } from '../systems/SettingsManager.js'
 
@@ -7,7 +7,6 @@ const COLS = 5
 const CARD_W = 200
 // 96 → 128：卡片现在要放下四行（关号 / 关名 / ★收集度 / 最佳分与最佳用时）。
 const CARD_H = 128
-const BIG_COINS_PER_LEVEL = 3
 const CARD_GAP_X = 18
 const CARD_GAP_Y = 22
 const NAV_REPEAT_MS = 220
@@ -50,9 +49,15 @@ export class LevelSelectScene extends Phaser.Scene {
         color: '#cdd6f4',
       })
       .setOrigin(0.5)
-    this.root.add([title, hint])
+    // 总进度：45 枚大金币里拿了多少、通关了几关。收集品做出来了却没有一个
+    // 地方显示"我离全收集还有多远"，这一行就是那个地方。
+    const progress = this.add
+      .text(0, 0, '', { fontFamily: 'sans-serif', fontSize: '18px', color: '#ffd34d' })
+      .setOrigin(0.5)
+    this.root.add([title, hint, progress])
     this._title = title
     this._hint = hint
+    this._progress = progress
 
     this.cards = this.levelIds.map((id, i) => {
       const col = i % COLS
@@ -61,7 +66,7 @@ export class LevelSelectScene extends Phaser.Scene {
       const y = row * (CARD_H + CARD_GAP_Y)
       const box = this.add.rectangle(x, y, CARD_W, CARD_H, 0x2b355c).setStrokeStyle(3, 0x4a5680)
       const idText = this.add
-        .text(x, y - 40, id, { fontFamily: 'sans-serif', fontSize: '26px', color: '#8fd3ff' })
+        .text(x, y - 40, id, { fontFamily: 'sans-serif', fontSize: '26px', color: WORLDS[worldOf(id)]?.color ?? '#8fd3ff' })
         .setOrigin(0.5)
       const nameText = this.add
         .text(x, y - 12, LEVELS[id].name, { fontFamily: 'sans-serif', fontSize: '18px', color: '#f2f2f2' })
@@ -69,10 +74,10 @@ export class LevelSelectScene extends Phaser.Scene {
       // 大金币收集度：localStorage 里是同步的，直接画。
       const got = collected[id]?.length ?? 0
       const starText = this.add
-        .text(x, y + 14, '★'.repeat(got) + '☆'.repeat(Math.max(0, BIG_COINS_PER_LEVEL - got)), {
+        .text(x, y + 14, '★'.repeat(got) + '☆'.repeat(Math.max(0, PER_LEVEL - got)), {
           fontFamily: 'sans-serif',
           fontSize: '20px',
-          color: got === BIG_COINS_PER_LEVEL ? '#ffd34d' : '#c8b06a',
+          color: got === PER_LEVEL ? '#ffd34d' : '#c8b06a',
         })
         .setOrigin(0.5)
       // 最佳成绩在 IndexedDB 里，只能异步取——先占位，回来再填。
@@ -91,6 +96,7 @@ export class LevelSelectScene extends Phaser.Scene {
 
     this._loadBestScores()
 
+    this._updateProgress()
     this._buildSettings()
     this._layout(this.scale.gameSize)
     this._onResize = (gameSize) => this._layout(gameSize)
@@ -103,6 +109,16 @@ export class LevelSelectScene extends Phaser.Scene {
       space: 'SPACE', enter: 'ENTER',
     })
     this._highlight()
+  }
+
+  /** 顶部总进度行。★ 数同步可得；通关关数由 _loadBestScores 回填。 */
+  _updateProgress(clearedCount = null) {
+    const record = this.saveManager.getBigCoinRecord()
+    const stars = this.levelIds.reduce((n, id) => n + Math.min(PER_LEVEL, record[id]?.length ?? 0), 0)
+    const cleared = clearedCount === null ? '' : `　🏁 已通关 ${clearedCount}/${this.levelIds.length} 关`
+    const done = stars === TOTAL_BIG_COINS ? '　🎉 全收集！' : ''
+    this._progress.setText(`★ 大金币 ${stars}/${TOTAL_BIG_COINS}${cleared}${done}`)
+    this._progress.setColor(stars === TOTAL_BIG_COINS ? '#a8e6a1' : '#ffd34d')
   }
 
   /**
@@ -161,10 +177,14 @@ export class LevelSelectScene extends Phaser.Scene {
       const total = Math.round(ms / 1000)
       return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`
     }
+    let cleared = 0
     this.levelIds.forEach((id, i) => {
       this.saveManager.getBestByLevel(id).then((best) => {
         const card = this.cards?.[i]
-        if (!best || !card?.bestText?.scene) return
+        if (!best) return
+        cleared++
+        if (this._progress?.scene) this._updateProgress(cleared)
+        if (!card?.bestText?.scene) return
         card.bestText.setText(`最佳 ${best.bestScore}　${fmtTime(best.bestTimeMs)}`)
         card.bestText.setColor('#a8e6a1')
       })
@@ -181,7 +201,8 @@ export class LevelSelectScene extends Phaser.Scene {
     this.root.setPosition(cx, gridTop)
     // Title/hint offsets are relative to row 0 / the last row respectively —
     // constant regardless of how many rows exist below/above them.
-    this._title.setPosition(0, -CARD_H - 60)
+    this._title.setPosition(0, -CARD_H - 76)
+    this._progress.setPosition(0, -CARD_H - 34)
     this.settingRow?.setPosition(0, rows * (CARD_H + CARD_GAP_Y) + 8)
     this._hint.setPosition(0, rows * (CARD_H + CARD_GAP_Y) + 40)
   }
@@ -198,7 +219,7 @@ export class LevelSelectScene extends Phaser.Scene {
       box.setStrokeStyle(selected ? 5 : 3, selected ? 0xffe066 : 0x4a5680)
       box.setFillStyle(selected ? 0x3a4a7a : 0x2b355c)
       box.setScale(selected ? 1.06 : 1)
-      idText.setColor(selected ? '#ffe066' : '#8fd3ff')
+      idText.setColor(selected ? '#ffe066' : (WORLDS[worldOf(this.levelIds[i])]?.color ?? '#8fd3ff'))
     })
   }
 

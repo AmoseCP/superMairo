@@ -210,3 +210,22 @@ test('幽灵：回放按经过时间插值，跑完即隐藏', async () => {
   // 纯视觉：绝不能挂物理体，否则会挡路/被踩
   assert.equal(pb.rect.body, null)
 })
+
+// --- 8. 世界（章节）划分 ---------------------------------------------------
+test('世界：id 前缀决定归属，每个世界的第一关才插过渡卡', async () => {
+  const { LEVELS, WORLDS, worldOf, isWorldOpener, TOTAL_BIG_COINS, BIG_COINS_PER_LEVEL } =
+    await import('../src/config/levels.js')
+  const ids = Object.keys(LEVELS)
+
+  assert.equal(worldOf('2-3'), 2)
+  // 每个世界都要有展示元数据，否则过渡卡会退回第一世界的文案
+  for (const id of ids) assert.ok(WORLDS[worldOf(id)], `世界 ${worldOf(id)} 缺少元数据`)
+
+  const openers = ids.filter(isWorldOpener)
+  assert.deepEqual(openers, [...new Set(ids.map(worldOf))].map((w) => ids.find((id) => worldOf(id) === w)))
+  assert.equal(openers.length, new Set(ids.map(worldOf)).size, '过渡卡数量应当等于世界数')
+  assert.ok(!isWorldOpener('1-2'), '世界中间的关卡不该插过渡卡')
+  assert.ok(!isWorldOpener('nope'), '未知关卡 id 不该被当成世界开场')
+
+  assert.equal(TOTAL_BIG_COINS, ids.length * BIG_COINS_PER_LEVEL)
+})

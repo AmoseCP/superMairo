@@ -15,21 +15,43 @@ export class HUDScene extends Phaser.Scene {
   }
 
   create() {
-    this.add
-      .text(
-        12,
-        12,
-        'P1: 方向键/WASD 移动 · Shift 加速 · Space/↑/W 跳跃 · F 或手柄 X/扳机键 喷火（需先吃蘑菇变大+吃火焰花才能用）· 手柄0\n' +
-          'P2 加入: IJKL + U + O，或手柄1 · 掉进缺口会变泡泡，队友碰泡泡复活',
-        { fontFamily: 'sans-serif', fontSize: '14px', color: '#2d2d2d' },
-      )
-      .setScrollFactor(0)
+    this.helpText = this.add.text(12, 12, '', { fontFamily: 'sans-serif', color: '#2d2d2d' }).setScrollFactor(0)
+    this.statusText = this.add.text(12, 0, '', { fontFamily: 'sans-serif', color: '#2d2d2d' }).setScrollFactor(0)
 
-    this.statusText = this.add
-      .text(12, 56, '', { fontFamily: 'sans-serif', fontSize: '14px', color: '#2d2d2d' })
-      .setScrollFactor(0)
+    this._applyLayout()
+    this._onResize = () => this._applyLayout()
+    this.scale.on('resize', this._onResize)
+    this.events.once('shutdown', () => this.scale.off('resize', this._onResize))
 
     this.input.keyboard.on('keydown-M', () => this.gameScene?.audioManager?.toggleMute())
+  }
+
+  /**
+   * 按视口宽度挑字号和操作说明。
+   *
+   * 原来这里是一段写死 14px、762px 宽的键盘说明，两个问题：手机横屏只有
+   * 667~932px 宽，这一行直接从右边溢出；而且整块 HUD 有 103px 高，在 390px
+   * 高的横屏上吃掉 26% 的可视高度——那可是玩家用来看脚下的地方。更根本的是，
+   * 触屏设备上"Shift 加速 / F 喷火"这种键盘说明本身就是废话，却占着最大一块。
+   */
+  _applyLayout() {
+    const w = this.scale.width
+    const touch = this.sys.game.device.input.touch
+    const compact = w < 1100
+    const fontSize = compact ? '11px' : '14px'
+
+    this.helpText.setFontSize(fontSize)
+    this.statusText.setFontSize(fontSize)
+    this.helpText.setText(
+      touch
+        ? '左下 ◀▶ 移动 · ⚡ 加速 · 右下 ⤒ 跳跃 · 🔥 喷火（需先变大+吃火焰花）'
+        : compact
+          ? 'P1: ←→/AD 移动 · Shift 加速 · Space 跳跃 · F 喷火　|　P2: IJKL+U+O 加入'
+          : 'P1: 方向键/WASD 移动 · Shift 加速 · Space/↑/W 跳跃 · F 或手柄 X/扳机键 喷火（需先吃蘑菇变大+吃火焰花才能用）· 手柄0\n' +
+            'P2 加入: IJKL + U + O，或手柄1 · 掉进缺口会变泡泡，队友碰泡泡复活',
+    )
+    // 状态行紧跟说明行，不再写死 y=56——说明行现在可能是一行也可能是两行。
+    this.statusText.setY(this.helpText.y + this.helpText.height + (compact ? 4 : 8))
   }
 
   update(time) {

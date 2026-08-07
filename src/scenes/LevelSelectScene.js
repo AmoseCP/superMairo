@@ -7,6 +7,10 @@ const COLS = 5
 const CARD_W = 200
 // 96 → 128：卡片现在要放下四行（关号 / 关名 / ★收集度 / 最佳分与最佳用时）。
 const CARD_H = 128
+// 小屏（手机横屏）用的紧凑卡片：只留关号 / 关名 / ★，最佳成绩挪到底部提示行。
+// 不这么做的话整块内容要缩到 0.47 倍才塞得下，关名只剩 8.5px，等于看不见。
+const CARD_H_COMPACT = 92
+const COMPACT_BELOW_H = 560
 const CARD_GAP_X = 18
 const CARD_GAP_Y = 22
 const NAV_REPEAT_MS = 220
@@ -84,6 +88,7 @@ export class LevelSelectScene extends Phaser.Scene {
       const bestText = this.add
         .text(x, y + 40, '尚未通关', { fontFamily: 'sans-serif', fontSize: '13px', color: '#8b93b5' })
         .setOrigin(0.5)
+      bestText.bestLabel = null // 由 _loadBestScores 填；紧凑模式下改由提示行显示
       box.setInteractive({ useHandCursor: true })
       box.on('pointerover', () => this._setIndex(i))
       box.on('pointerdown', () => {
@@ -185,26 +190,70 @@ export class LevelSelectScene extends Phaser.Scene {
         cleared++
         if (this._progress?.scene) this._updateProgress(cleared)
         if (!card?.bestText?.scene) return
-        card.bestText.setText(`最佳 ${best.bestScore}　${fmtTime(best.bestTimeMs)}`)
+        card.bestText.bestLabel = `最佳 ${best.bestScore}　${fmtTime(best.bestTimeMs)}`
+        card.bestText.setText(card.bestText.bestLabel)
         card.bestText.setColor('#a8e6a1')
       })
     })
   }
 
   _layout(gameSize) {
-    // Generalized for any row count (was hand-tuned for exactly 2 rows,
-    // hardcoding "2" in two places) — 3 worlds × 5 levels now makes a 5×3
-    // grid, and more worlds keep working without touching this again.
+    // 内部一律按"设计空间"摆（原点 = 第一行卡片的中心），最后再把整个 root
+    // 等比缩放到视口里。
+    //
+    // 这一步是必须的：整块内容固定 1072×712px，而手机横屏只有 844×390 甚至
+    // 667×375。缩放之前，标题和总进度整个跑到屏幕上方外面，设置行和操作提示
+    // 掉到屏幕下方外面，左右两列卡片被切掉——连 iPad mini 横屏都横向少 48px。
+    // 与其为每种断点写一套排布，不如让这一版设计整体缩小：卡片布局本身
+    // （5 列 × 3 行 = 每行正好一个世界）是有含义的，不该在小屏上被拆散。
     const rows = Math.ceil(this.levelIds.length / COLS)
-    const cx = gameSize.width / 2
-    const gridTop = gameSize.height / 2 - CARD_H / 2 - ((rows - 1) * (CARD_H + CARD_GAP_Y)) / 2 + 20
-    this.root.setPosition(cx, gridTop)
-    // Title/hint offsets are relative to row 0 / the last row respectively —
-    // constant regardless of how many rows exist below/above them.
-    this._title.setPosition(0, -CARD_H - 76)
-    this._progress.setPosition(0, -CARD_H - 34)
-    this.settingRow?.setPosition(0, rows * (CARD_H + CARD_GAP_Y) + 8)
-    this._hint.setPosition(0, rows * (CARD_H + CARD_GAP_Y) + 40)
+    // 屏幕矮到一定程度就换紧凑卡片：与其让整块内容缩到 0.47 倍（关名只剩
+    // 8.5px，纯属"在屏内但看不清"），不如砍掉每张卡上最次要的一行。
+    const compact = gameSize.height < COMPACT_BELOW_H
+    const cardH = compact ? CARD_H_COMPACT : CARD_H
+    this._applyCardMode(compact, cardH)
+
+    this._title.setPosition(0, -cardH - 76)
+    this._progress.setPosition(0, -cardH - 34)
+    this.settingRow?.setPosition(0, rows * (cardH + CARD_GAP_Y) + 8)
+    this._hint.setPosition(0, rows * (cardH + CARD_GAP_Y) + 40)
+
+    const designW = COLS * CARD_W + (COLS - 1) * CARD_GAP_X
+    const designTop = -cardH - 76 - 26 // 标题字号 40，再留一点上边
+    const designBottom = rows * (cardH + CARD_GAP_Y) + 40 + 14 // 提示行下边
+    const designH = designBottom - designTop
+    const pad = 14
+    const fit = Math.min(
+      1,
+      (gameSize.width - pad * 2) / designW,
+      (gameSize.height - pad * 2) / designH,
+    )
+    this.root.setScale(fit)
+    // 缩放后整体垂直居中：设计空间的上边界要落在留白之后。
+    this.root.setPosition(gameSize.width / 2, (gameSize.height - designH * fit) / 2 - designTop * fit)
+  }
+
+  /** 切换标准/紧凑卡片：改卡片高度、重排内部元素、决定要不要显示最佳成绩行。 */
+  _applyCardMode(compact, cardH) {
+    if (this._compact === compact) return
+    this._compact = compact
+    const rowsOf = compact
+      ? { id: -26, name: -2, star: 22, best: null }
+      : { id: -40, name: -12, star: 14, best: 40 }
+    this.cards.forEach(({ box, idText, nameText, starText, bestText }, i) => {
+      const col = i % COLS
+      const row = Math.floor(i / COLS)
+      const x = (col - (COLS - 1) / 2) * (CARD_W + CARD_GAP_X)
+      const y = row * (cardH + CARD_GAP_Y)
+      box.setSize(CARD_W, cardH)
+      box.setPosition(x, y)
+      idText.setPosition(x, y + rowsOf.id)
+      nameText.setPosition(x, y + rowsOf.name)
+      starText.setPosition(x, y + rowsOf.star)
+      bestText.setVisible(rowsOf.best !== null)
+      if (rowsOf.best !== null) bestText.setPosition(x, y + rowsOf.best)
+    })
+    this._highlight()
   }
 
   _setIndex(i) {
@@ -214,6 +263,11 @@ export class LevelSelectScene extends Phaser.Scene {
   }
 
   _highlight() {
+    // 紧凑模式下卡片放不下最佳成绩，改在底部提示行显示当前选中关的成绩。
+    if (this._compact && this._hint) {
+      const best = this.cards[this.index]?.bestText?.bestLabel
+      this._hint.setText(best ? `${this.levelIds[this.index]}　${best}　·　${this._defaultHint}` : this._defaultHint)
+    }
     this.cards.forEach(({ box, idText }, i) => {
       const selected = i === this.index
       box.setStrokeStyle(selected ? 5 : 3, selected ? 0xffe066 : 0x4a5680)

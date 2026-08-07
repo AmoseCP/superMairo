@@ -2,7 +2,19 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      maximum-scale/user-scalable：canvas 游戏里双击缩放和捏合缩放只会帮倒忙——
+      连点跳跃键会被当成双击，页面一放大就再也回不到"一屏刚好一个视口"。
+      viewport-fit=cover：允许内容延伸到刘海区域，配合下面 #app 的 safe-area
+      内边距，做到"背景铺满、控件避开"。
+    -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#1a1a2e" />
     <title>跳跳兔历险记</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
@@ -15,19 +27,75 @@
         height: 100%;
         background: #1a1a2e;
         overflow: hidden;
+        /* 触屏上禁掉长按选中/长按菜单/双击缩放，否则按住方向键会弹出系统菜单 */
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+        touch-action: none;
+        overscroll-behavior: none;
       }
       #app {
         width: 100%;
         height: 100%;
         line-height: 0;
+        /* 刘海/圆角/小白条区域让出来——虚拟方向键在左下、跳跃键在右下，
+           横屏时刘海正好在左边或右边，不避开就会压住其中一侧的按键。 */
+        box-sizing: border-box;
+        padding: env(safe-area-inset-top) env(safe-area-inset-right)
+                 env(safe-area-inset-bottom) env(safe-area-inset-left);
       }
       #app canvas {
         display: block;
+      }
+
+      /*
+        竖屏提示。这是个横版卷轴游戏：竖屏下视口宽度只有 390px 左右，一屏
+        看不到前方地形，虚拟按键也会挤在一起，实际不可玩。用纯 CSS 媒体查询
+        盖一层提示，不需要任何 JS，也不用监听 orientationchange。
+        只在"触屏 + 竖屏"下出现：桌面窄窗口不该被这层东西挡住。
+      */
+      #rotate-hint {
+        display: none;
+      }
+      @media (orientation: portrait) and (pointer: coarse) {
+        #rotate-hint {
+          display: flex;
+          position: fixed;
+          inset: 0;
+          z-index: 10;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 18px;
+          background: #1a1a2e;
+          color: #ffe066;
+          font-family: sans-serif;
+          text-align: center;
+          padding: 24px;
+        }
+        #rotate-hint .icon {
+          font-size: 64px;
+          animation: tilt 1.8s ease-in-out infinite;
+        }
+        #rotate-hint .title { font-size: 22px; }
+        #rotate-hint .sub { font-size: 15px; color: #cdd6f4; line-height: 1.6; }
+      }
+      @keyframes tilt {
+        0%, 45%, 100% { transform: rotate(0deg); }
+        70%, 95% { transform: rotate(-90deg); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #rotate-hint .icon { animation: none; }
       }
     </style>
   </head>
   <body>
     <div id="app"></div>
+    <div id="rotate-hint">
+      <div class="icon">📱</div>
+      <div class="title">请把手机横过来</div>
+      <div class="sub">这是横版卷轴游戏<br />竖屏看不到前方地形，虚拟按键也会挤在一起</div>
+    </div>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

@@ -127,8 +127,7 @@
       "forcePx": 150,
       "periodMs": 5000,
       "gustMs": 1600,
-      "phaseMs": 0,
-      "toTile": null
+      "phaseMs": 0
     },
     {
       "fromTileY": 12,
@@ -137,8 +136,7 @@
       "forcePx": 200,
       "periodMs": 4500,
       "gustMs": 1800,
-      "phaseMs": 1000,
-      "toTile": null
+      "phaseMs": 1000
     },
     {
       "fromTileY": 3,
@@ -147,8 +145,7 @@
       "forcePx": 220,
       "periodMs": 4200,
       "gustMs": 1400,
-      "phaseMs": 0,
-      "toTile": null
+      "phaseMs": 0
     },
     {
       "fromTileY": 3,
@@ -157,8 +154,7 @@
       "forcePx": 220,
       "periodMs": 4200,
       "gustMs": 1400,
-      "phaseMs": 2100,
-      "toTile": null
+      "phaseMs": 2100
     }
   ],
   "enemies": [

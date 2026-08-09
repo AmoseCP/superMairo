@@ -18,6 +18,11 @@ export class TouchControls {
     scene.scale.on('resize', () => this._layout())
   }
 
+  /** 屏幕尺寸或相机缩放变了都要重排（GameScene._syncScreenSpaceUi 会调）。 */
+  relayout() {
+    this._layout()
+  }
+
   _layout() {
     for (const b of this._buttons) {
       b.zone.destroy()
@@ -30,6 +35,10 @@ export class TouchControls {
     const r = 34
     const margin = 24
 
+    // 按键要贴着屏幕四角、并保持固定的手指大小，所以先按屏幕坐标摆好，再统一
+    // 换算成 scrollFactor=0 对象的坐标——主相机在小屏上会缩小（见 GameScene
+    // MIN_VISIBLE_TILES_Y），而该缩放是绕相机中心做的，不换算的话按键会跟着
+    // 缩到 58% 并挤向屏幕中央（实测过，完全没法按）。
     this._addButton(margin + r, h - margin - r, r, '◀', 'left')
     this._addButton(margin + r * 2 + 16 + r, h - margin - r, r, '▶', 'right')
     this._addButton(w - margin - r, h - margin - r, r, '⤒', 'jump')
@@ -37,15 +46,22 @@ export class TouchControls {
     this._addButton(margin + r, h - margin - r * 2 - 16 - r, r * 0.8, '⚡', 'run')
   }
 
-  _addButton(x, y, radius, label, action) {
+  _addButton(screenX, screenY, screenRadius, label, action) {
+    // screen* 是希望在屏幕上呈现的位置与大小；换算到相机缩放前的坐标系。
+    const ui = this.scene.screenToUi?.(screenX, screenY) ?? { x: screenX, y: screenY }
+    const s = this.scene.uiScale ?? 1
+    const x = ui.x
+    const y = ui.y
+    const radius = screenRadius * s
     const circle = this.scene.add
       .circle(x, y, radius, 0xffffff, BUTTON_ALPHA_IDLE)
       .setScrollFactor(0)
       .setDepth(1000)
       .setInteractive()
     const text = this.scene.add
-      .text(x, y, label, { fontSize: `${radius}px` })
+      .text(x, y, label, { fontSize: `${Math.round(screenRadius)}px` })
       .setOrigin(0.5)
+      .setScale(s)
       .setScrollFactor(0)
       .setDepth(1001)
 

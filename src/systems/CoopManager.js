@@ -299,7 +299,10 @@ export class CoopManager {
     // the ground floats in the middle/upper area with empty space below it
     // on any screen taller than the level. Only taller-than-viewport levels
     // (or tall sections) actually need real vertical follow.
-    const viewportHeight = this.scene.scale.height
+    // 必须用**世界空间**的可视高度，不是屏幕像素：主相机在小屏上会缩小
+    // （GameScene MIN_VISIBLE_TILES_Y），zoom<1 时实际看得见的世界高度比
+    // scale.height 大，照旧用屏幕高度会把矮关卡的地面顶到屏幕中间。
+    const viewportHeight = this.scene.cameras.main.worldView.height || this.scene.scale.height
     const targetY = this.worldHeight <= viewportHeight ? this.worldHeight - viewportHeight / 2 : midY
     this.cameraTarget.setPosition(midX, targetY)
 
@@ -336,6 +339,11 @@ export class CoopManager {
     this._updateJoinArrow(view)
   }
 
+  /** 相机缩放变了：屏幕空间 UI 的补偿需要重算（箭头下一帧自己会更新位置）。 */
+  syncScreenSpaceUi() {
+    this._joinArrow?.setScale(this.scene.uiScale ?? 1)
+  }
+
   _updateJoinArrow(view) {
     // Points toward whichever teammate (or their bubble) is currently off-screen.
     const p1X = this.p1Bubble ? this.p1Bubble.x : this.p1.rect.x
@@ -349,8 +357,14 @@ export class CoopManager {
     const pointsRight = targets[0] > view.centerX
     const screenW = this.scene.scale.width
     const screenH = this.scene.scale.height
+    // 贴屏幕边缘的指示箭头，同样要抵消主相机缩放（见 GameScene.screenToUi）。
+    const ui = this.scene.screenToUi?.(pointsRight ? screenW - 20 : 20, screenH / 2) ?? {
+      x: pointsRight ? screenW - 20 : 20,
+      y: screenH / 2,
+    }
     this._joinArrow.setVisible(true)
-    this._joinArrow.setPosition(pointsRight ? screenW - 20 : 20, screenH / 2)
+    this._joinArrow.setPosition(ui.x, ui.y)
+    this._joinArrow.setScale(this.scene.uiScale ?? 1)
     this._joinArrow.setRotation(pointsRight ? 0 : Math.PI)
   }
 }

@@ -32,6 +32,8 @@ export class RisingLava {
 
     this.body = scene.add.rectangle(0, 0, this.right - this.left, 1, LAVA_COLOR, 0.92).setDepth(-1)
     this.topBand = scene.add.rectangle(0, 0, this.right - this.left, LAVA_TOP_BAND_PX, LAVA_TOP_COLOR, 0.95)
+    // 屏幕空间（同 systems/DarknessLayer.js：钉屏幕才没有镜头滞后），但要自己
+    // 抵消主相机在小屏上的缩放，否则这层红色警示盖不满屏。
     this.warningOverlay = scene.add
       .rectangle(0, 0, scene.scale.width, scene.scale.height, WARNING_COLOR, 0)
       .setScrollFactor(0)
@@ -94,5 +96,16 @@ export class RisingLava {
     const alpha = closestTiles <= 0 ? 0 : Math.max(0, (WARNING_RANGE_TILES - closestTiles) / WARNING_RANGE_TILES) * 0.35
     const pulse = 0.7 + 0.3 * Math.sin(this.scene.time.now / 220)
     this.warningOverlay.setAlpha(alpha * pulse)
+    // 抵消相机缩放，保证任何屏幕尺寸下都铺满整屏（居中是缩放变换的不动点，
+    // 位置不用换算，只要把尺寸放大 1/zoom）。
+    if (alpha > 0) {
+      const cam = this.scene.cameras.main
+      const w = cam.width / cam.zoom
+      const h = cam.height / cam.zoom
+      this.warningOverlay.setPosition(cam.centerX, cam.centerY)
+      if (this.warningOverlay.width !== w || this.warningOverlay.height !== h) {
+        this.warningOverlay.setSize(w, h)
+      }
+    }
   }
 }

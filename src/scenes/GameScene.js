@@ -63,6 +63,12 @@ const FLAGPOLE_HEIGHT_TILES = 9
 // ends up floating in the middle) instead of letting the ground sit at the
 // bottom. See CoopManager._updateCamera() for the other half of this fix.
 const CAMERA_VERTICAL_PADDING = 3000 * WORLD_SCALE
+// 视野下限：无论屏幕多矮，纵向至少要看得见这么多格。
+// WORLD_SCALE=3 让一格有 96px，桌面 879px 高能看 9.2 格；手机横屏只有 390px，
+// 不缩放就只剩 4.1 格——而跳跃本身就有 3.5 格高，等于一跳顶满屏、看不到落点。
+// 取 7 格：手机上 zoom≈0.58，横向也从 8.8 格回到 15 格，接近桌面观感；桌面
+// 本身高于 7 格所以 zoom 被钳在 1，完全不受影响。
+const MIN_VISIBLE_TILES_Y = 7
 const ENEMY_TYPES = {
   mochi: Mochi,
   shellbuddy: ShellBuddy,
@@ -445,6 +451,7 @@ export class GameScene extends Phaser.Scene {
     if (this.priorForms?.p1) this.coop.p1.applyForm(this.priorForms.p1)
 
     this.cameras.main.setBounds(0, worldHeight - CAMERA_VERTICAL_PADDING, worldWidth, CAMERA_VERTICAL_PADDING)
+    this._applyCameraZoom()
     this.cameras.main.fadeIn(250, 0, 0, 0)
     // ScaleManager is game-global — its listeners survive scene restarts, so
     // they must be removed on shutdown or every restart stacks another set
@@ -462,6 +469,7 @@ export class GameScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setScrollFactor(0)
       .setDepth(2000)
+      .setScale(this.uiScale) // 居中是缩放变换的不动点，位置不用换算，只抵消尺寸
     const recenterCompleteText = (gameSize) => {
       this.levelCompleteText.setPosition(gameSize.width / 2, gameSize.height / 2)
     }
@@ -600,6 +608,44 @@ export class GameScene extends Phaser.Scene {
   // including when the browser itself is toggled fullscreen.
   _handleResize(gameSize) {
     this.cameras.main.setSize(gameSize.width, gameSize.height)
+    this._applyCameraZoom()
+  }
+
+  /**
+   * 按屏幕高度算主相机缩放，保证纵向视野不少于 MIN_VISIBLE_TILES_Y 格。
+   * 只会缩小、不会放大（桌面恒为 1），所以桌面观感一点没变。
+   */
+  _applyCameraZoom() {
+    const zoom = Math.min(1, this.scale.height / (MIN_VISIBLE_TILES_Y * TILE_SIZE))
+    this.cameras.main.setZoom(zoom)
+    this._syncScreenSpaceUi()
+    return zoom
+  }
+
+  /** scrollFactor=0 的对象要抵消相机缩放才能保持 1:1，屏幕尺寸变化时重算一遍。 */
+  _syncScreenSpaceUi() {
+    this.levelCompleteText?.setScale(this.uiScale)
+    this.touchControls?.relayout()
+    this.coop?.syncScreenSpaceUi()
+  }
+
+  /** scrollFactor=0 的 UI 要乘这个才能在屏幕上保持原始尺寸。 */
+  get uiScale() {
+    return 1 / this.cameras.main.zoom
+  }
+
+  /**
+   * 屏幕坐标 → scrollFactor=0 对象该摆的坐标。
+   *
+   * 相机缩放是**绕相机中心**做的（已对 Phaser 的 camera.matrix 实测核对）：
+   *   screen = (obj − center) × zoom + center
+   * 所以屏幕角落的 UI（虚拟按键等）不换算的话，zoom<1 时会连带缩小并挤向
+   * 屏幕中央。中心点是这个变换的不动点，居中的 UI 只需要改缩放、不用挪位置。
+   */
+  screenToUi(sx, sy) {
+    const cam = this.cameras.main
+    const z = cam.zoom
+    return { x: (sx - cam.centerX) / z + cam.centerX, y: (sy - cam.centerY) / z + cam.centerY }
   }
 
   _loadMovingPlatforms(platformData) {
@@ -983,19 +1029,22 @@ export class GameScene extends Phaser.Scene {
       const phase = this._windPhase(gust, time)
       if (phase === 'calm') continue
       // particles (foretell + gust) — only when the band intersects the view
+      // 用 worldView 而不是 scrollX+cam.width：后者是屏幕像素，zoom<1 时
+      // 比真实可视范围小，粒子会在边缘漏喷。
+      const view = cam.worldView
       if (
-        gust.bottom > cam.scrollY &&
-        gust.top < cam.scrollY + cam.height &&
-        gust.right > cam.scrollX &&
-        gust.left < cam.scrollX + cam.width &&
+        gust.bottom > view.y &&
+        gust.top < view.bottom &&
+        gust.right > view.x &&
+        gust.left < view.right &&
         time - gust.lastParticleAt > WIND_PARTICLE_INTERVAL_MS &&
         this._windParticleCount < WIND_PARTICLE_CAP
       ) {
         gust.lastParticleAt = time
         this._windParticleCount++
-        const y = Phaser.Math.Between(Math.max(gust.top, cam.scrollY), Math.min(gust.bottom, cam.scrollY + cam.height))
-        const spawnLeft = Math.max(gust.left, cam.scrollX) - 20
-        const spawnRight = Math.min(gust.right, cam.scrollX + cam.width) + 20
+        const y = Phaser.Math.Between(Math.max(gust.top, view.y), Math.min(gust.bottom, view.bottom))
+        const spawnLeft = Math.max(gust.left, view.x) - 20
+        const spawnRight = Math.min(gust.right, view.right) + 20
         const startX = gust.dir > 0 ? spawnLeft : spawnRight
         const leaf = this.add
           .rectangle(startX, y, 10 * WORLD_SCALE, 3 * WORLD_SCALE, WIND_PARTICLE_COLOR, 0.8)

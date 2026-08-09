@@ -302,6 +302,19 @@ for (const file of readdirSync(MAPS).filter((f) => f.endsWith('.json')).sort()) 
     }
   }
 
+  // ---- 0. 数据卫生：不许有 null / NaN 坐标 ----
+  // 缺省字段（如 darkness.toTile = "直到关卡末尾"）和写成 null 是两回事：
+  // 前者是有效语义，后者会被 `!== undefined` 之类的判断放行，然后当成坐标 0。
+  // 真出过一次——批量插列工具把缺省端点算成 undefined + n = NaN，序列化成
+  // null，2-2 的整关黑暗就此静默失效，审计和单测都没看见。
+  const scanNulls = (node, path) => {
+    if (node === null) return report(lvl, `${path} 是 null（缺省字段应当整个省略，写成 null 会被当作坐标 0）`)
+    if (typeof node === 'number' && !Number.isFinite(node)) return report(lvl, `${path} 不是有限数值（${node}）`)
+    if (Array.isArray(node)) return node.forEach((v, i) => scanNulls(v, `${path}[${i}]`))
+    if (node && typeof node === 'object') return Object.entries(node).forEach(([k, v]) => scanNulls(v, `${path}.${k}`))
+  }
+  scanNulls(d, '')
+
   // ---- 10~13. 像素级实体几何（见文件头 PIXEL_BOXES 一节的常量）----
   // 规则 1~9 全部用格子索引比较，看不见"帽沿多出 30px""宝箱只有 84×66"这类
   // 亚格差异，于是漏掉了一整类玩家实际会遇到的 bug：方块半埋进管道、金币整枚

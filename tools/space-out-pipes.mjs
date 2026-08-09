@@ -124,9 +124,15 @@ function insertColumns(d, atTile, n) {
     const list = Array.isArray(d[sec]) ? d[sec] : d[sec] ? [d[sec]] : []
     for (const r of list) {
       const a = r[aKey], b = r[bKey]
-      if (b <= atTile) continue                 // 完全在插入点左侧
-      else if (a >= atTile) { r[aKey] = a + n; r[bKey] = b + n } // 完全在右侧，整体平移
-      else r[bKey] = b + n                      // 跨过插入点，拉长
+      // 端点缺省是有语义的（"从头开始"/"直到关卡末尾"），不是 0。照着算会得到
+      // undefined + n = NaN，JSON.stringify 再把它写成 null——2-2 的
+      // darkness.toTile 就这么变成了 null，而 DarknessLayer 用的是
+      // `!== undefined` 判断，null 通过了检查、被当成坐标 0，整关黑暗直接失效
+      // （萤光洞窟的核心机制静默消失，审计和测试都看不见）。缺省就保持缺省。
+      const hasA = typeof a === 'number', hasB = typeof b === 'number'
+      if (hasB && b <= atTile) continue                                  // 完全在插入点左侧
+      if (hasA && a >= atTile) { r[aKey] = a + n; if (hasB) r[bKey] = b + n; continue } // 整体右移
+      if (hasB) r[bKey] = b + n                                          // 跨过插入点，拉长
     }
   }
   d.widthTiles += n

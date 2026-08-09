@@ -18,8 +18,11 @@ export class DarknessLayer {
     this.scene = scene
     this.maxAlpha = alpha
     this.baseRadius = lightRadiusTiles * TILE_SIZE
-    this.left = fromTile !== undefined ? fromTile * TILE_SIZE : -Infinity
-    this.right = toTile !== undefined ? toTile * TILE_SIZE : Infinity
+    // 用 ?? 而不是 `!== undefined`：后者放 null 通过，null*96 = 0 会把黑暗区间
+    // 反转成空集，整关黑暗静默失效（真出过一次，见 tools/space-out-pipes.mjs
+    // 里那段注释）。缺省语义是"没有边界"。
+    this.left = Number.isFinite(fromTile) ? fromTile * TILE_SIZE : -Infinity
+    this.right = Number.isFinite(toTile) ? toTile * TILE_SIZE : Infinity
 
     if (!scene.textures.exists(LIGHT_TEXTURE_KEY)) {
       const canvas = scene.textures.createCanvas(LIGHT_TEXTURE_KEY, LIGHT_TEXTURE_SIZE, LIGHT_TEXTURE_SIZE)
@@ -34,6 +37,14 @@ export class DarknessLayer {
       canvas.refresh()
     }
 
+    // 屏幕空间（scrollFactor 0）——**不能**改成世界空间跟随 worldView：
+    // worldView 要到渲染阶段才刷新，覆盖层就永远慢镜头一帧。平时只差十几像素，
+    // 但复活/管道传送后镜头是大跨度追赶，实测有 436px 的亮边漏出来。钉在屏幕上
+    // 则天然零延迟。
+    //
+    // 代价是要自己抵消相机缩放（GameScene 在小屏上会 zoom<1）：RT 按
+    // "屏幕尺寸 ÷ zoom" 做大，再摆到屏幕左上角对应的位置，渲染时乘回 zoom
+    // 正好铺满一屏。
     this.rt = scene.add
       .renderTexture(0, 0, scene.scale.width, scene.scale.height)
       .setOrigin(0)
@@ -42,16 +53,23 @@ export class DarknessLayer {
     // Off-list stamp object reused for every erase call (never displayed).
     this.spot = scene.make.image({ key: LIGHT_TEXTURE_KEY, add: false }).setOrigin(0.5)
 
-    this._onResize = (gameSize) => this.rt.setSize(gameSize.width, gameSize.height)
-    scene.scale.on('resize', this._onResize)
     scene.events.once('shutdown', () => this.destroy())
   }
 
   /** `lights`: [{x, y, radius}] in WORLD coordinates. Call once per frame. */
   update(lights) {
     const cam = this.scene.cameras.main
+    const z = cam.zoom
+    // RT 以"世界单位"计量：做成一屏那么大 ÷ zoom，渲染时乘回 zoom 铺满屏幕。
+    const w = cam.width / z
+    const h = cam.height / z
+    if (this.rt.width !== w || this.rt.height !== h) this.rt.setSize(w, h)
+    const origin = this.scene.screenToUi?.(0, 0) ?? { x: 0, y: 0 }
+    this.rt.setPosition(origin.x, origin.y)
+
+    const view = cam.worldView
     // Local-darkness ramp: full black deep inside [left, right], fading at edges.
-    const cx = cam.scrollX + cam.width / 2
+    const cx = view.centerX
     const ramp = EDGE_RAMP_TILES * TILE_SIZE
     const depthIn = Math.min(cx - this.left, this.right - cx)
     const alpha = this.maxAlpha * Phaser.Math.Clamp((depthIn + ramp) / ramp, 0, 1)
@@ -61,12 +79,12 @@ export class DarknessLayer {
     this.rt.fill(0x000000, alpha)
     for (const l of lights) {
       this.spot.setDisplaySize(l.radius * 2, l.radius * 2)
-      this.rt.erase(this.spot, l.x - cam.scrollX, l.y - cam.scrollY)
+      // RT 内坐标同样是世界单位，直接用"世界点 − 可视矩形左上角"。
+      this.rt.erase(this.spot, l.x - view.x, l.y - view.y)
     }
   }
 
   destroy() {
-    this.scene.scale.off('resize', this._onResize)
     this.rt.destroy()
     this.spot.destroy()
   }

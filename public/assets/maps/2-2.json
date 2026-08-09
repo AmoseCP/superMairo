@@ -10,8 +10,7 @@
   "darkness": {
     "alpha": 0.92,
     "lightRadiusTiles": 4.5,
-    "fromTile": 8,
-    "toTile": null
+    "fromTile": 8
   },
   "groundSpans": [
     {
